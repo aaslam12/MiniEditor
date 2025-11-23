@@ -1,0 +1,64 @@
+Recommended approach (start simple, iterate)
+
+1. Start in a minimal GUI-less loop or terminal so you can iterate on buffers and algorithms quickly. You can later port rendering to SDL2/X11/Wayland — core logic stays the same.
+
+
+
+
+
+2. Minimum viable editor (MVE) features — implement in this order
+
+    File open/save (plain bytes, then handle UTF-8).
+
+    Buffer model (choose data structure) and basic insert/delete.
+
+    Cursor movement (by codepoint and by rendered column).
+
+    Rendering to a screen buffer (for now: stdout with ANSI sequences or a simple framebuffer).
+
+    Simple key handling (read raw key codes, map arrows, backspace, ctrl combos).
+
+    Undo/redo (command stack or inverse operation log).
+
+    Search (incremental / find next).
+
+    Line wrapping, scrolling, and selection.
+
+    Syntax highlighting (tokenize per line, incremental repaint).
+
+    Performance: large files, incremental redraws, profiling.
+
+
+
+
+3. Data-structure recommendation
+    Gap buffer — easiest and good performance for typical editing (insert/delete near cursor).
+    Alternatives (later): Piece table (good for undo), rope (for huge files).
+    Implement one first (gap buffer recommended), write tests for insert/delete correctness.
+
+
+
+
+4. Key implementation details to focus on
+    UTF-8 handling: treat buffer as bytes but expose UTF-8 aware cursor movement. Implement helper that decodes next/prev codepoint (or use a small header-only lib).
+    Mapping logical ↔ visual positions: store lines or compute line breaks on demand; cache wrap results if needed.
+    Dirty regions & redraw: track which lines changed; only redraw those.
+    Undo model: store inverse operations (positions and bytes) or record a sequence of edits grouped into user actions.
+    Testing: write unit tests for buffer ops and UTF handling before GUI.
+
+
+
+
+5. Rendering choices for GUI later
+    SDL2 — easy portable window, keyboard, and text blitting (you still implement glyph rendering or use a font rasterizer).
+    Freetype + OpenGL — more work but production-quality rendering.
+    X11 / Wayland raw — educational but steep. Recommendation: port to SDL2 when you want a window — it’s practical and keeps focus on editor internals.
+
+
+
+
+6. Build configuration (quick practical advice)
+    Use CMake as a single cross-platform build system. Start with a tiny CMakeLists and expand.
+    Organize code: src/ (core buffer + editor logic), ui/ (render + input), tests/.
+    Use an out-of-source build: mkdir build && cd build && cmake .. && make.
+    When you add SDL2 later, link via find_package(SDL2 REQUIRED) or pkg_check_modules(SDL2 REQUIRED sdl2).

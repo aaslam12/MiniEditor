@@ -1,0 +1,15 @@
+Checks: >
+  clang-analyzer-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-owning-memory
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/|include/'
+FormatStyle: file
+CheckOptions:
+  - key: modernize-use-nullptr.NullMacros
+    value: 'NULL'
+

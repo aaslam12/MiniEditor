@@ -1,0 +1,10 @@
+/build/
+/.vscode/
+/.idea/
+/.cache/
+*.o
+*.obj
+*.exe
+*.out
+*.log
+
