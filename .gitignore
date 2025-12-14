@@ -2,6 +2,7 @@
 /.vscode/
 /.idea/
 /.cache/
+/Testing/
 *.o
 *.obj
 *.exe
