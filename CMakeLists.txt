@@ -83,7 +83,7 @@ endif()
 # Tests
 # -----------------------
 include(CTest)
-if(MINIEDITOR_BUILD_TESTS)
+if(MINIEDITOR_BUILD_TESTS AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
   include(FetchContent)
   FetchContent_Declare(
     catch2
