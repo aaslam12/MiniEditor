@@ -24,13 +24,6 @@ cmake -S . -B "${BUILD_DIR}" -G ${BUILD_SYS}\
 
 cmake --build "${BUILD_DIR}" -- -j"$(nproc)"
 
-echo
-echo "Binary:"
-echo "${BUILD_DIR}/minieditor"
-echo
-echo "Running binary..."
-"${BUILD_DIR}/minieditor" || true
-
 if [ "${CONFIG}" = "Debug" ]; then
   echo
   echo "Running tests..."
@@ -40,6 +33,15 @@ if [ "${CONFIG}" = "Debug" ]; then
     echo "No tests binary found in ${BUILD_DIR}"
   fi
 fi
+
+
+echo
+echo "Binary:"
+echo "${BUILD_DIR}/minieditor"
+echo
+echo "Running binary..."
+"${BUILD_DIR}/minieditor" || true
+
 
 
 

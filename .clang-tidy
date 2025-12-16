@@ -6,6 +6,16 @@ Checks: >
   bugprone-*,
   cppcoreguidelines-*,
   -cppcoreguidelines-owning-memory
+  -cppcoreguidelines-pro-bounds-*
+  -modernize-use-trailing-return-type
+  -modernize-use-equals-default
+  -modernize-use-auto
+  -readability-function-size
+  misc-misplaced-widenin-cast
+  misc-redundant-expression
+  misc-throw-by-value-catch-by-reference
+  misc-definitions-in-headers
+
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/|include/'
 FormatStyle: file
