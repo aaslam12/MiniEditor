@@ -6,19 +6,14 @@ piece_table::piece_table()
 piece_table::~piece_table()
 {}
 
-piece_table::piece_table(const std::string &initial_content)
+piece_table::piece_table(const std::string& initial_content)
 {}
 
-void piece_table::insert(size_t position, const std::string &text)
-{
-    position--;
-}
+void piece_table::insert(size_t position, const std::string& text)
+{}
 
 void piece_table::remove(size_t position, size_t length)
-{
-    position--;
-    length--;
-}
+{}
 
 std::string piece_table::to_string() const
 {
