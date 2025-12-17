@@ -23,6 +23,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # -----------------------
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+# Add color to g++ output
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+
 # Where to find headers (kept for compatibility; targets also set includes)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -42,8 +45,6 @@ endif()
 file(GLOB_RECURSE ALL_SRC CONFIGURE_DEPENDS
   "${CMAKE_SOURCE_DIR}/src/*.cpp"
   "${CMAKE_SOURCE_DIR}/src/*.c"
-  "${CMAKE_SOURCE_DIR}/include/*.h"
-  "${CMAKE_SOURCE_DIR}/include/*.hpp"
 )
 
 # exclude main.cpp from core library if present

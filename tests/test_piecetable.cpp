@@ -101,18 +101,18 @@ TEST_CASE("piece_table Edge Cases", "[piecetable]")
     // Test case 1: A long series of small inserts.
     piece_table pt;
     for (int i = 0; i < 100; ++i)
-        {
-            pt.insert(pt.length(), "a");
-        }
+    {
+        pt.insert(pt.length(), "a");
+    }
     std::string expected(100, 'a');
     REQUIRE(pt.length() == 100);
     REQUIRE(pt.to_string() == expected);
 
     // Test case 2: A long series of small deletes from the start.
     for (int i = 0; i < 100; ++i)
-        {
-            pt.remove(0, 1);
-        }
+    {
+        pt.remove(0, 1);
+    }
     REQUIRE(pt.length() == 0);
     REQUIRE(pt.to_string() == "");
 

@@ -11,9 +11,9 @@ class piece_table
 public:
 
     piece_table();
-    piece_table(piece_table&&)                 = default;
-    piece_table(const piece_table&)            = default;
-    piece_table& operator=(piece_table&&)      = default;
+    piece_table(piece_table&&) = default;
+    piece_table(const piece_table&) = default;
+    piece_table& operator=(piece_table&&) = default;
     piece_table& operator=(const piece_table&) = default;
     ~piece_table();
 
@@ -27,5 +27,5 @@ private:
 
     std::string original_buffer;
     std::string add_buffer;
-    red_black_tree<std::string> rbtree;
+    RBT<std::string> rbtree;
 };
