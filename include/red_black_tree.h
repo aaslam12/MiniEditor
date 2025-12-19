@@ -246,11 +246,11 @@ RBT<T>::Node* RBT<T>::get_sibling(Node* current)
 
     if (is_in_right_subtree(current))
     {
-        return p->left;
+        return p->left.get();
     }
     else
     {
-        return p->right;
+        return p->right.get();
     }
 }
 
@@ -259,7 +259,7 @@ RBT<T>::Node* RBT<T>::get_grandparent(Node* current)
 {
     if (!current || !current->parent)
         return nullptr;
-    return current->parent->parent;
+    return current->parent->parent.get();
 }
 
 template<typename T>
@@ -271,12 +271,12 @@ RBT<T>::Node* RBT<T>::get_near_node(Node* current)
     if (is_in_right_subtree(current))
     {
         if (current->parent->left)
-            return current->parent->left->right;
+            return current->parent->left->right.get();
     }
     else
     {
         if (current->parent->right)
-            return current->parent->right->left;
+            return current->parent->right->left.get();
     }
 
     return nullptr;
@@ -291,12 +291,12 @@ RBT<T>::Node* RBT<T>::get_far_node(Node* current)
     if (is_in_right_subtree(current))
     {
         if (current->parent->left)
-            return current->parent->left->left;
+            return current->parent->left->left.get();
     }
     else
     {
         if (current->parent->right)
-            return current->parent->right->right;
+            return current->parent->right->right.get();
     }
 
     return nullptr;
@@ -311,12 +311,12 @@ bool RBT<T>::is_near_node(Node* current, Node* other)
     if (is_in_right_subtree(current))
     {
         if (current->parent->left)
-            return current->parent->left->right == other;
+            return current->parent->left->right.get() == other;
     }
     else
     {
         if (current->parent->right)
-            return current->parent->right->left == other;
+            return current->parent->right->left.get() == other;
     }
 
     return false;
@@ -331,12 +331,12 @@ bool RBT<T>::is_far_node(Node* current, Node* other)
     if (is_in_right_subtree(current))
     {
         if (current->parent->left)
-            return current->parent->left->left == other;
+            return current->parent->left->left.get() == other;
     }
     else
     {
         if (current->parent->right)
-            return current->parent->right->right == other;
+            return current->parent->right->right.get() == other;
     }
 
     return false;
