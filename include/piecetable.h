@@ -1,6 +1,6 @@
 #pragma once
 
-#include "red_black_tree.h"
+#include "implicit_treap.h"
 #include <string>
 
 /*
@@ -25,7 +25,7 @@ public:
 
 private:
 
-    std::string original_buffer;
-    std::string add_buffer;
-    RBT<std::string> rbtree;
+    std::string m_original_buffer;
+    std::string m_add_buffer;
+    ImpTreap<std::string> m_treap;
 };
