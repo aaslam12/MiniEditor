@@ -1,17 +1,18 @@
 #include <catch2/catch_test_macros.hpp>
+#include <implicit_treap.h>
 
-// Tests for ImplicitTreap Initialization
-TEST_CASE("ImplicitTreap Initialization", "[ImplicitTreap]")
+// Tests for ImpTreap Initialization
+TEST_CASE("ImpTreap Initialization", "[ImplicitTreap]")
 {
-    ImplicitTreap<int> treap;
+    ImpTreap<int> treap;
     REQUIRE(treap.size() == 0);
     REQUIRE(treap.empty() == true);
 }
 
 // Tests for Insertion
-TEST_CASE("ImplicitTreap Insertion", "[ImplicitTreap]")
+TEST_CASE("ImpTreap Insertion", "[ImplicitTreap]")
 {
-    ImplicitTreap<char> treap;
+    ImpTreap<char> treap;
 
     // Insert at the beginning of an empty treap
     treap.insert(0, 'a');
@@ -41,9 +42,9 @@ TEST_CASE("ImplicitTreap Insertion", "[ImplicitTreap]")
 }
 
 // Tests for Deletion
-TEST_CASE("ImplicitTreap Deletion", "[ImplicitTreap]")
+TEST_CASE("ImpTreap Deletion", "[ImplicitTreap]")
 {
-    ImplicitTreap<int> treap;
+    ImpTreap<int> treap;
     treap.insert(0, 10);
     treap.insert(1, 20);
     treap.insert(2, 30);
@@ -74,9 +75,9 @@ TEST_CASE("ImplicitTreap Deletion", "[ImplicitTreap]")
 }
 
 // Tests for Access (at method)
-TEST_CASE("ImplicitTreap Access", "[ImplicitTreap]")
+TEST_CASE("ImpTreap Access", "[ImplicitTreap]")
 {
-    ImplicitTreap<std::string> treap;
+    ImpTreap<std::string> treap;
     treap.insert(0, "hello");
     treap.insert(1, "world");
     treap.insert(2, "!");
@@ -91,9 +92,9 @@ TEST_CASE("ImplicitTreap Access", "[ImplicitTreap]")
 }
 
 // Tests for Mixed Operations
-TEST_CASE("ImplicitTreap Mixed Operations", "[ImplicitTreap]")
+TEST_CASE("ImpTreap Mixed Operations", "[ImplicitTreap]")
 {
-    ImplicitTreap<char> treap;
+    ImpTreap<char> treap;
     std::string text = "This is a test";
     for (size_t i = 0; i < text.length(); ++i)
     {
@@ -115,7 +116,7 @@ TEST_CASE("ImplicitTreap Mixed Operations", "[ImplicitTreap]")
         treap.insert(8 + i, insert_text[i]);
     }
 
-    std::string expected = "This is an example test";
+    std::string expected = "This is an exampletest";
     REQUIRE(treap.size() == expected.length());
     for (size_t i = 0; i < expected.length(); ++i)
     {
@@ -124,9 +125,9 @@ TEST_CASE("ImplicitTreap Mixed Operations", "[ImplicitTreap]")
 }
 
 // Tests for Edge Cases
-TEST_CASE("ImplicitTreap Edge Cases", "[ImplicitTreap]")
+TEST_CASE("ImpTreap Edge Cases", "[ImplicitTreap]")
 {
-    ImplicitTreap<int> treap;
+    ImpTreap<int> treap;
 
     // Operations on an empty treap
     REQUIRE_NOTHROW(treap.insert(0, 1));

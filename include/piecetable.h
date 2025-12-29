@@ -4,17 +4,25 @@
 #include <string>
 
 /*
- * Piece table created using Red Black trees.
+ * Piece table created using an Implicit Treap
  */
 class piece_table
 {
+private:
+
+    struct Piece
+    {
+        size_t start;
+        size_t length;
+    };
+
+    std::string m_original_buffer;
+    std::string m_add_buffer;
+    ImpTreap<Piece> m_treap;
+
 public:
 
     piece_table();
-    piece_table(piece_table&&) = default;
-    piece_table(const piece_table&) = default;
-    piece_table& operator=(piece_table&&) = default;
-    piece_table& operator=(const piece_table&) = default;
     ~piece_table();
 
     piece_table(const std::string& initial_content);
@@ -22,10 +30,4 @@ public:
     void remove(size_t position, size_t length);
     std::string to_string() const;
     size_t length() const;
-
-private:
-
-    std::string m_original_buffer;
-    std::string m_add_buffer;
-    ImpTreap<std::string> m_treap;
 };
