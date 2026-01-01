@@ -1,4 +1,5 @@
 #include "implicit_treap.h"
+#include <chrono>
 
 void implicit_treap::delete_nodes(node* n)
 {
@@ -113,4 +114,73 @@ implicit_treap::node* implicit_treap::merge(node* l, node* r)
         r->update_size();
         return r;
     }
+}
+
+implicit_treap::node* implicit_treap::copy_nodes(const node* n)
+{
+    if (!n)
+        return nullptr;
+
+    piece p;
+    p.buf_type = n->data.buf_type;
+    p.length = n->data.length;
+    p.start = n->data.start;
+
+    node* new_node = new node(p);
+    new_node->priority = n->priority;
+    new_node->left = copy_nodes(n->left);
+    new_node->right = copy_nodes(n->right);
+    new_node->subtree_length = n->subtree_length;
+
+    return new_node;
+}
+
+void implicit_treap::get_pieces(node* n, std::vector<piece>& pieces) const
+{
+    if (!n)
+        return;
+
+    get_pieces(n->left, pieces);
+    pieces.push_back(n->data);
+    get_pieces(n->right, pieces);
+}
+
+implicit_treap::implicit_treap(const implicit_treap& other) : m_root(copy_nodes(other.m_root))
+{}
+
+implicit_treap& implicit_treap::operator=(const implicit_treap& other)
+{
+    if (this != &other)
+    {
+        clear();
+        m_root = copy_nodes(other.m_root);
+    }
+    return *this;
+}
+
+implicit_treap::implicit_treap(implicit_treap&& other) noexcept : m_root(other.m_root)
+{
+    other.m_root = nullptr;
+}
+
+implicit_treap& implicit_treap::operator=(implicit_treap&& other) noexcept
+{
+    if (this == &other)
+        return *this;
+
+    clear();
+    m_root = other.m_root;
+    other.m_root = nullptr;
+    return *this;
+}
+
+void implicit_treap::clear()
+{
+    delete_nodes(m_root);
+    m_root = nullptr;
+}
+
+void implicit_treap::get_pieces(std::vector<implicit_treap::piece>& pieces) const
+{
+    return get_pieces(m_root, pieces);
 }

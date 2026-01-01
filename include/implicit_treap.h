@@ -1,9 +1,12 @@
 #pragma once
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
+#include <vector>
+
+// TODO:
+// Add helper function that finds node containing index
+// Add traversal/interator operations
 
 /*
  * This is an implicit treap.
@@ -16,6 +19,8 @@
  *
  *  An in-order traversal gives:
  *  A B C D E F G
+ *
+ *  Length refers to bytes.
  */
 class implicit_treap
 {
@@ -44,8 +49,8 @@ public:
     struct piece
     {
         buffer_type buf_type;
-        size_t start; // offset in the buffer
-        size_t length;
+        size_t start;  // offset in the buffer
+        size_t length; // refers to bytes
     };
 
 private:
@@ -81,11 +86,18 @@ private:
     }
 
     void delete_nodes(node* n);
+    node* copy_nodes(const node* n); // performs deep copy
+    void get_pieces(node* n, std::vector<piece>& pieces) const;
 
 public:
 
     implicit_treap();
     ~implicit_treap();
+
+    implicit_treap(const implicit_treap& other);
+    implicit_treap& operator=(const implicit_treap& other);
+    implicit_treap(implicit_treap&& other) noexcept;
+    implicit_treap& operator=(implicit_treap&& other) noexcept;
 
     void insert(size_t index, const piece& value);
     void erase(size_t index, size_t length);
@@ -93,4 +105,6 @@ public:
     node* merge(node* l, node* r);
     size_t size() const;
     bool empty() const;
+    void clear();
+    void get_pieces(std::vector<implicit_treap::piece>& pieces) const;
 };
