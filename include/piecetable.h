@@ -10,15 +10,9 @@ class piece_table
 {
 private:
 
-    struct Piece
-    {
-        size_t start;
-        size_t length;
-    };
-
     std::string m_original_buffer;
     std::string m_add_buffer;
-    ImpTreap<Piece> m_treap;
+    implicit_treap m_treap;
 
 public:
 

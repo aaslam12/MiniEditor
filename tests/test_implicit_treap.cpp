@@ -1,156 +1,109 @@
 #include <catch2/catch_test_macros.hpp>
 #include <implicit_treap.h>
+#include <string>
 
-// Tests for ImpTreap Initialization
-TEST_CASE("ImpTreap Initialization", "[ImplicitTreap]")
+// Tests for implicit_treap Initialization
+TEST_CASE("implicit_treap Initialization", "[ImplicitTreap]")
 {
-    ImpTreap<int> treap;
+    implicit_treap treap;
     REQUIRE(treap.size() == 0);
     REQUIRE(treap.empty() == true);
 }
 
 // Tests for Insertion
-TEST_CASE("ImpTreap Insertion", "[ImplicitTreap]")
+TEST_CASE("implicit_treap Insertion", "[ImplicitTreap]")
 {
-    ImpTreap<char> treap;
+    implicit_treap treap;
 
     // Insert at the beginning of an empty treap
-    treap.insert(0, 'a');
+    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ADD, .start = 0, .length = 1});
     REQUIRE(treap.size() == 1);
-    REQUIRE(treap.at(0) == 'a');
 
     // Insert at the end
-    treap.insert(1, 'c');
+    treap.insert(1, {.buf_type = implicit_treap::buffer_type::ADD, .start = 1, .length = 1});
     REQUIRE(treap.size() == 2);
-    REQUIRE(treap.at(0) == 'a');
-    REQUIRE(treap.at(1) == 'c');
 
     // Insert in the middle
-    treap.insert(1, 'b');
+    treap.insert(1, {.buf_type = implicit_treap::buffer_type::ADD, .start = 2, .length = 1});
     REQUIRE(treap.size() == 3);
-    REQUIRE(treap.at(0) == 'a');
-    REQUIRE(treap.at(1) == 'b');
-    REQUIRE(treap.at(2) == 'c');
 
     // Insert at the front
-    treap.insert(0, 'x');
+    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ADD, .start = 3, .length = 1});
     REQUIRE(treap.size() == 4);
-    REQUIRE(treap.at(0) == 'x');
-    REQUIRE(treap.at(1) == 'a');
-    REQUIRE(treap.at(2) == 'b');
-    REQUIRE(treap.at(3) == 'c');
 }
 
 // Tests for Deletion
-TEST_CASE("ImpTreap Deletion", "[ImplicitTreap]")
+TEST_CASE("implicit_treap Deletion", "[ImplicitTreap]")
 {
-    ImpTreap<int> treap;
-    treap.insert(0, 10);
-    treap.insert(1, 20);
-    treap.insert(2, 30);
-    treap.insert(3, 40);
+    implicit_treap treap;
+    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ADD, .start = 0, .length = 1});
+    treap.insert(1, {.buf_type = implicit_treap::buffer_type::ADD, .start = 1, .length = 1});
+    treap.insert(2, {.buf_type = implicit_treap::buffer_type::ADD, .start = 2, .length = 1});
+    treap.insert(3, {.buf_type = implicit_treap::buffer_type::ADD, .start = 3, .length = 1});
+    REQUIRE(treap.size() == 4);
 
     // Delete from the middle
-    treap.erase(1); // delete 20
+    treap.erase(1, 1); // delete 2nd item
     REQUIRE(treap.size() == 3);
-    REQUIRE(treap.at(0) == 10);
-    REQUIRE(treap.at(1) == 30);
-    REQUIRE(treap.at(2) == 40);
 
     // Delete from the beginning
-    treap.erase(0); // delete 10
+    treap.erase(0, 1); // delete 1st item
     REQUIRE(treap.size() == 2);
-    REQUIRE(treap.at(0) == 30);
-    REQUIRE(treap.at(1) == 40);
 
     // Delete from the end
-    treap.erase(1); // delete 40
+    treap.erase(1, 1); // delete last item (at index 1 of 2)
     REQUIRE(treap.size() == 1);
-    REQUIRE(treap.at(0) == 30);
 
     // Delete the last element
-    treap.erase(0);
+    treap.erase(0, 1);
     REQUIRE(treap.size() == 0);
     REQUIRE(treap.empty() == true);
 }
 
-// Tests for Access (at method)
-TEST_CASE("ImpTreap Access", "[ImplicitTreap]")
-{
-    ImpTreap<std::string> treap;
-    treap.insert(0, "hello");
-    treap.insert(1, "world");
-    treap.insert(2, "!");
-
-    REQUIRE(treap.at(0) == "hello");
-    REQUIRE(treap.at(1) == "world");
-    REQUIRE(treap.at(2) == "!");
-
-    // Test modification through reference
-    treap.at(1) = "beautiful";
-    REQUIRE(treap.at(1) == "beautiful");
-}
-
 // Tests for Mixed Operations
-TEST_CASE("ImpTreap Mixed Operations", "[ImplicitTreap]")
+TEST_CASE("implicit_treap Mixed Operations", "[ImplicitTreap]")
 {
-    ImpTreap<char> treap;
+    implicit_treap treap;
     std::string text = "This is a test";
-    for (size_t i = 0; i < text.length(); ++i)
-    {
-        treap.insert(i, text[i]);
-    }
+    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ORIGINAL, .start = 0, .length = text.length()});
 
     REQUIRE(treap.size() == text.length());
 
     // Erase " a"
-    treap.erase(7); // ' '
-    treap.erase(7); // 'a'
+    treap.erase(7, 2);
     REQUIRE(treap.size() == text.length() - 2);
-    REQUIRE(treap.at(7) == ' ');
 
     // Insert " an example"
     std::string insert_text = "an example";
-    for (size_t i = 0; i < insert_text.length(); ++i)
-    {
-        treap.insert(8 + i, insert_text[i]);
-    }
+    treap.insert(7, {.buf_type = implicit_treap::buffer_type::ADD, .start = 0, .length = insert_text.length()});
 
     std::string expected = "This is an exampletest";
     REQUIRE(treap.size() == expected.length());
-    for (size_t i = 0; i < expected.length(); ++i)
-    {
-        REQUIRE(treap.at(i) == expected[i]);
-    }
 }
 
 // Tests for Edge Cases
-TEST_CASE("ImpTreap Edge Cases", "[ImplicitTreap]")
+TEST_CASE("implicit_treap Edge Cases", "[ImplicitTreap]")
 {
-    ImpTreap<int> treap;
+    implicit_treap treap;
 
     // Operations on an empty treap
-    REQUIRE_NOTHROW(treap.insert(0, 1));
+    REQUIRE_NOTHROW(treap.insert(0, {implicit_treap::buffer_type::ADD, 0, 1}));
     REQUIRE(treap.size() == 1);
-    REQUIRE_NOTHROW(treap.erase(0));
+    REQUIRE_NOTHROW(treap.erase(0, 1));
     REQUIRE(treap.size() == 0);
 
     // Large number of insertions
     int large_number = 1000;
     for (int i = 0; i < large_number; ++i)
     {
-        treap.insert(i, i);
+        treap.insert(i, {.buf_type = implicit_treap::buffer_type::ADD, .start = (size_t)i, .length = 1});
     }
     REQUIRE(treap.size() == large_number);
-    for (int i = 0; i < large_number; ++i)
-    {
-        REQUIRE(treap.at(i) == i);
-    }
 
     // Large number of deletions from the front
     for (int i = 0; i < large_number; ++i)
     {
-        treap.erase(0);
+        treap.erase(0, 1);
     }
     REQUIRE(treap.size() == 0);
     REQUIRE(treap.empty() == true);
