@@ -82,17 +82,17 @@ TEST_CASE("piece_table Mixed Operations", "[piecetable]")
     pt.remove(8, 6); // "a test"
     pt.insert(8, "an example");
     REQUIRE(pt.to_string() == "This is an example.");
-    REQUIRE(pt.length() == 20);
+    REQUIRE(pt.length() == 19);
 
     // Prepend text
     pt.insert(0, "Note: ");
     REQUIRE(pt.to_string() == "Note: This is an example.");
-    REQUIRE(pt.length() == 26);
+    REQUIRE(pt.length() == 25);
 
     // Delete from the middle
     pt.remove(4, 6); // ": This"
     REQUIRE(pt.to_string() == "Note is an example.");
-    REQUIRE(pt.length() == 20);
+    REQUIRE(pt.length() == 19);
 }
 
 // Tests edge cases for the piece table.
@@ -130,4 +130,42 @@ TEST_CASE("piece_table Edge Cases", "[piecetable]")
     pt_clamp.remove(0, 100); // Try to delete more than exists
     REQUIRE(pt_clamp.length() == 0);
     REQUIRE(pt_clamp.to_string() == "");
+}
+
+TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
+{
+    // 1. Clamping on Insert (inserting way past the end)
+    piece_table pt("Hello");
+    pt.insert(999, " world");
+    REQUIRE(pt.to_string() == "Hello world");
+    REQUIRE(pt.length() == 11);
+
+    // 2. Splitting an ADD piece
+    // Document: "Hello world" (1 piece: ADD)
+    pt.insert(6, "beautiful ");
+    REQUIRE(pt.to_string() == "Hello beautiful world");
+    
+    // 3. Cross-Piece Deletion
+    // Document: "Hello beautiful world"
+    // H e l l o   b e a u t i f u l   w o r l d
+    // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+    // Let's delete "beautiful " (indices 6 to 15)
+    pt.remove(6, 10);
+    REQUIRE(pt.to_string() == "Hello world");
+
+    // 4. Repeated Middle Operations (Heavy Node Splitting)
+    piece_table pt2("ABC");
+    pt2.insert(1, "1"); // A1BC
+    pt2.insert(2, "2"); // A12BC
+    pt2.insert(3, "3"); // A123BC
+    pt2.remove(1, 3);   // ABC
+    REQUIRE(pt2.to_string() == "ABC");
+    REQUIRE(pt2.length() == 3);
+
+    // 5. Deleting from a single-character piece
+    piece_table pt3("A");
+    pt3.insert(1, "B");
+    pt3.insert(2, "C");
+    pt3.remove(1, 1); // remove 'B'
+    REQUIRE(pt3.to_string() == "AC");
 }

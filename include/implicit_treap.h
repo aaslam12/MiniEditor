@@ -2,11 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 // TODO:
 // Add helper function that finds node containing index
-// Add traversal/interator operations
 
 /*
  * This is an implicit treap.
@@ -85,9 +85,14 @@ private:
         return x ? x->subtree_length : 0;
     }
 
+    node* find(size_t index, node* current) const;
     void delete_nodes(node* n);
     node* copy_nodes(const node* n); // performs deep copy
     void get_pieces(node* n, std::vector<piece>& pieces) const;
+
+    // helper function that allows you traverse through all nodes in in-order
+    // and run a callback function on each of them
+    void for_each(node* current, const std::function<void(const piece&)>& callback) const;
 
 public:
 
@@ -99,6 +104,8 @@ public:
     implicit_treap(implicit_treap&& other) noexcept;
     implicit_treap& operator=(implicit_treap&& other) noexcept;
 
+    // finds and returns the node with the containing index
+    node* find(size_t index) const;
     void insert(size_t index, const piece& value);
     void erase(size_t index, size_t length);
     void split(node* root, size_t index, node*& left, node*& right);
@@ -107,4 +114,8 @@ public:
     bool empty() const;
     void clear();
     void get_pieces(std::vector<implicit_treap::piece>& pieces) const;
+
+    // helper function that allows you traverse through all nodes in in-order
+    // and run a callback function on each of them
+    void for_each(const std::function<void(const piece&)>& callback) const;
 };

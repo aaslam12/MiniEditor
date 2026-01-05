@@ -20,6 +20,37 @@ implicit_treap::~implicit_treap()
     delete_nodes(m_root);
 }
 
+implicit_treap::node* implicit_treap::find(size_t index, node* current) const
+{
+    if (!current)
+        return nullptr;
+
+    const size_t left_len = get_subtree_length(current->left);
+
+    if (index < left_len)
+    {
+        // entirely in left subtree
+        return find(index, current->left);
+    }
+    else if (index < left_len + current->data.length)
+    {
+        // entirely in current node
+        return current;
+    }
+    else
+    {
+        // entirely in right node
+        return find(index - left_len - current->data.length, current->right);
+    }
+
+    return nullptr;
+}
+
+implicit_treap::node* implicit_treap::find(size_t index) const
+{
+    return find(index, m_root);
+}
+
 void implicit_treap::insert(size_t index, const piece& value)
 {
     if (value.length == 0)
@@ -183,4 +214,22 @@ void implicit_treap::clear()
 void implicit_treap::get_pieces(std::vector<implicit_treap::piece>& pieces) const
 {
     return get_pieces(m_root, pieces);
+}
+
+void implicit_treap::for_each(node* current, const std::function<void(const piece&)>& callback) const
+{
+    // helper recursive function
+    if (!current)
+        return;
+
+    for_each(current->left, callback);
+    callback(current->data);
+    for_each(current->right, callback);
+}
+
+void implicit_treap::for_each(const std::function<void(const piece&)>& callback) const
+{
+    // public facing function
+    if (m_root)
+        for_each(m_root, callback);
 }

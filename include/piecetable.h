@@ -19,7 +19,7 @@ public:
     piece_table();
     ~piece_table();
 
-    piece_table(const std::string& initial_content);
+    piece_table(const std::string initial_content);
     void insert(size_t position, const std::string& text);
     void remove(size_t position, size_t length);
     std::string to_string() const;
