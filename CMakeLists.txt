@@ -7,6 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Options
 # -----------------------
 option(MINIEDITOR_BUILD_TESTS "Build unit tests" OFF)
+option(MINIEDITOR_BUILD_STRESS_TESTS "Build performance stress tests" OFF)
 option(MINIEDITOR_ENABLE_SANITIZERS "Enable Address/Undefined sanitizers (only in Debug)" OFF)
 option(MINIEDITOR_USE_CLANG_TIDY "Run clang-tidy during builds if available" OFF)
 
@@ -101,15 +102,33 @@ if(MINIEDITOR_BUILD_TESTS AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     target_link_libraries(tests PRIVATE core Catch2::Catch2WithMain)
     add_test(NAME unit_tests COMMAND tests)
     set_tests_properties(unit_tests PROPERTIES LABELS "unit")
-  else()
-    message(WARNING "MINIEDITOR_BUILD_TESTS=ON but no tests found in tests/")
+      else()
+          message(WARNING "MINIEDITOR_BUILD_TESTS=ON but no tests found in tests/")
+      endif()
   endif()
-endif()
 
-# -----------------------
-# Format target
-# -----------------------
-find_program(CLANG_FORMAT_EXE NAMES clang-format clang-format-14)
+  # -----------------------
+  # Stress Tests
+  # -----------------------
+
+  if(MINIEDITOR_BUILD_STRESS_TESTS)
+
+    file(GLOB STRESS_SRCS "stress_tests/*.cpp")
+
+    foreach(stress_src ${STRESS_SRCS})
+      get_filename_component(test_name ${stress_src} NAME_WE)
+      add_executable(${test_name} ${stress_src})
+      target_link_libraries(${test_name} PRIVATE core)
+      message(STATUS "Stress test added: ${test_name}")
+    endforeach()
+
+  endif()
+
+
+
+  # -----------------------
+  # Format target
+  # -----------------------find_program(CLANG_FORMAT_EXE NAMES clang-format clang-format-14)
 if(CLANG_FORMAT_EXE)
   # prefer to format only source/header files (expand glob at configure time)
   file(GLOB_RECURSE FORMAT_FILES CONFIGURE_DEPENDS
