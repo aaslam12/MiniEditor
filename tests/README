@@ -1,0 +1,1 @@
+If your editor says it cannot find #include <catch2/catch_test_macros.hpp> in any tests, run the build-run-test.sh script in the project root directory which will create the test files and symlink the compile_commands.json file to the project root. Restart your editor after that. 

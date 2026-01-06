@@ -15,5 +15,7 @@ cmake -S . -B "${BUILD_DIR}" -G Ninja \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   "${CMAKE_ARGS[@]}"
 
+ln -sf "${BUILD_DIR}/compile_commands.json" .
+
 ninja -C "${BUILD_DIR}" -j"$(nproc)"
 
