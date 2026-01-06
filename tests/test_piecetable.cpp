@@ -1,6 +1,8 @@
 #include "piecetable.h"
 #include <catch2/catch_test_macros.hpp>
 
+using piece_table = AL::piece_table;
+
 // Tests the initial state of the piece table.
 TEST_CASE("piece_table Initialization", "[piecetable]")
 {
@@ -144,7 +146,7 @@ TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
     // Document: "Hello world" (1 piece: ADD)
     pt.insert(6, "beautiful ");
     REQUIRE(pt.to_string() == "Hello beautiful world");
-    
+
     // 3. Cross-Piece Deletion
     // Document: "Hello beautiful world"
     // H e l l o   b e a u t i f u l   w o r l d
@@ -168,4 +170,54 @@ TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
     pt3.insert(2, "C");
     pt3.remove(1, 1); // remove 'B'
     REQUIRE(pt3.to_string() == "AC");
+}
+
+TEST_CASE("piece_table get_index_for_line", "[piecetable]")
+{
+    // Case 1: Empty file
+    piece_table pt_empty;
+    REQUIRE(pt_empty.get_index_for_line(0) == 0);
+    REQUIRE(pt_empty.get_index_for_line(1) == 0);
+    REQUIRE(pt_empty.get_index_for_line(5) == 0);
+
+    // Case 2: Single piece, multiple lines
+    // "Line 1\nLine 2\nLine 3"
+    // Indexes:
+    // L i n e   1 \n L i n e   2 \n L i n e   3
+    // 0 1 2 3 4 5 6  7 8 9 0 1 2 3  4 5 6 7 8 9
+    piece_table pt_single("Line 1\nLine 2\nLine 3");
+    REQUIRE(pt_single.get_index_for_line(0) == 0);
+    REQUIRE(pt_single.get_index_for_line(1) == 0);
+    REQUIRE(pt_single.get_index_for_line(2) == 7);
+    REQUIRE(pt_single.get_index_for_line(3) == 14);
+    REQUIRE(pt_single.get_index_for_line(4) == 20); // Past the end returns length
+
+    // Case 3: Fragmented pieces (multi-piece lines)
+    piece_table pt_frag("Part 1");
+    pt_frag.insert(pt_frag.length(), "\nPart 2\n");
+    pt_frag.insert(pt_frag.length(), "Part 3");
+    // String: "Part 1\nPart 2\nPart 3"
+    // Length: 6 + 1 + 6 + 1 + 6 = 20
+    REQUIRE(pt_frag.to_string() == "Part 1\nPart 2\nPart 3");
+    REQUIRE(pt_frag.get_index_for_line(1) == 0);
+    REQUIRE(pt_frag.get_index_for_line(2) == 7);
+    REQUIRE(pt_frag.get_index_for_line(3) == 14);
+
+    // Case 4: Line split across pieces
+    piece_table pt_split("Hello ");
+    pt_split.insert(pt_split.length(), "World\n");
+    pt_split.insert(pt_split.length(), "Next");
+    // String: "Hello World\nNext"
+    // Indexes:
+    // H e l l o   W o r l d \n N e x t
+    // 0 1 2 3 4 5 6 7 8 9 0  1 2 3 4 5
+    REQUIRE(pt_split.get_index_for_line(1) == 0);
+    REQUIRE(pt_split.get_index_for_line(2) == 12);
+
+    // Case 5: Consecutive newlines
+    piece_table pt_newlines("A\n\nB");
+    REQUIRE(pt_newlines.get_index_for_line(1) == 0); // 'A'
+    REQUIRE(pt_newlines.get_index_for_line(2) == 2); // First \n
+    REQUIRE(pt_newlines.get_index_for_line(3) == 3); // 'B'
+    REQUIRE(pt_newlines.get_index_for_line(4) == 4); // End
 }

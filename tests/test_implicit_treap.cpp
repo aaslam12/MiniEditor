@@ -2,6 +2,9 @@
 #include <implicit_treap.h>
 #include <string>
 
+using implicit_treap = AL::implicit_treap;
+using buffer_type = AL::buffer_type;
+
 // Tests for implicit_treap Initialization
 TEST_CASE("implicit_treap Initialization", "[ImplicitTreap]")
 {
@@ -16,19 +19,19 @@ TEST_CASE("implicit_treap Insertion", "[ImplicitTreap]")
     implicit_treap treap;
 
     // Insert at the beginning of an empty treap
-    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ADD, .start = 0, .length = 1});
+    treap.insert(0, {.buf_type = buffer_type::ADD, .start = 0, .length = 1});
     REQUIRE(treap.size() == 1);
 
     // Insert at the end
-    treap.insert(1, {.buf_type = implicit_treap::buffer_type::ADD, .start = 1, .length = 1});
+    treap.insert(1, {.buf_type = buffer_type::ADD, .start = 1, .length = 1});
     REQUIRE(treap.size() == 2);
 
     // Insert in the middle
-    treap.insert(1, {.buf_type = implicit_treap::buffer_type::ADD, .start = 2, .length = 1});
+    treap.insert(1, {.buf_type = buffer_type::ADD, .start = 2, .length = 1});
     REQUIRE(treap.size() == 3);
 
     // Insert at the front
-    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ADD, .start = 3, .length = 1});
+    treap.insert(0, {.buf_type = buffer_type::ADD, .start = 3, .length = 1});
     REQUIRE(treap.size() == 4);
 }
 
@@ -36,10 +39,10 @@ TEST_CASE("implicit_treap Insertion", "[ImplicitTreap]")
 TEST_CASE("implicit_treap Deletion", "[ImplicitTreap]")
 {
     implicit_treap treap;
-    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ADD, .start = 0, .length = 1});
-    treap.insert(1, {.buf_type = implicit_treap::buffer_type::ADD, .start = 1, .length = 1});
-    treap.insert(2, {.buf_type = implicit_treap::buffer_type::ADD, .start = 2, .length = 1});
-    treap.insert(3, {.buf_type = implicit_treap::buffer_type::ADD, .start = 3, .length = 1});
+    treap.insert(0, {.buf_type = buffer_type::ADD, .start = 0, .length = 1});
+    treap.insert(1, {.buf_type = buffer_type::ADD, .start = 1, .length = 1});
+    treap.insert(2, {.buf_type = buffer_type::ADD, .start = 2, .length = 1});
+    treap.insert(3, {.buf_type = buffer_type::ADD, .start = 3, .length = 1});
     REQUIRE(treap.size() == 4);
 
     // Delete from the middle
@@ -65,7 +68,7 @@ TEST_CASE("implicit_treap Mixed Operations", "[ImplicitTreap]")
 {
     implicit_treap treap;
     std::string text = "This is a test";
-    treap.insert(0, {.buf_type = implicit_treap::buffer_type::ORIGINAL, .start = 0, .length = text.length()});
+    treap.insert(0, {.buf_type = buffer_type::ORIGINAL, .start = 0, .length = text.length()});
 
     REQUIRE(treap.size() == text.length());
 
@@ -75,7 +78,7 @@ TEST_CASE("implicit_treap Mixed Operations", "[ImplicitTreap]")
 
     // Insert " an example"
     std::string insert_text = "an example";
-    treap.insert(7, {.buf_type = implicit_treap::buffer_type::ADD, .start = 0, .length = insert_text.length()});
+    treap.insert(7, {.buf_type = buffer_type::ADD, .start = 0, .length = insert_text.length()});
 
     std::string expected = "This is an exampletest";
     REQUIRE(treap.size() == expected.length());
@@ -87,7 +90,7 @@ TEST_CASE("implicit_treap Edge Cases", "[ImplicitTreap]")
     implicit_treap treap;
 
     // Operations on an empty treap
-    REQUIRE_NOTHROW(treap.insert(0, {implicit_treap::buffer_type::ADD, 0, 1}));
+    REQUIRE_NOTHROW(treap.insert(0, {buffer_type::ADD, 0, 1}));
     REQUIRE(treap.size() == 1);
     REQUIRE_NOTHROW(treap.erase(0, 1));
     REQUIRE(treap.size() == 0);
@@ -96,7 +99,7 @@ TEST_CASE("implicit_treap Edge Cases", "[ImplicitTreap]")
     int large_number = 1000;
     for (int i = 0; i < large_number; ++i)
     {
-        treap.insert(i, {.buf_type = implicit_treap::buffer_type::ADD, .start = (size_t)i, .length = 1});
+        treap.insert(i, {.buf_type = buffer_type::ADD, .start = (size_t)i, .length = 1});
     }
     REQUIRE(treap.size() == large_number);
 

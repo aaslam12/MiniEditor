@@ -4,30 +4,34 @@
 #include <cstddef>
 #include <string>
 
-/*
- * Piece table created using an Implicit Treap
- */
-class piece_table
+namespace AL
 {
-private:
 
-    std::string m_original_buffer;
-    std::string m_add_buffer;
-    implicit_treap m_treap;
+    /*
+     * Piece table created using an Implicit Treap
+     */
+    class piece_table
+    {
+    private:
 
-    // normalizes string IN PLACE
-    // replaces OS specific line endings with '\n'
-    void normalize(std::string& text);
+        std::string m_original_buffer;
+        std::string m_add_buffer;
+        AL::implicit_treap m_treap;
 
-public:
+        // normalizes string IN PLACE
+        // replaces OS specific line endings with '\n'
+        void normalize(std::string& text);
 
-    piece_table();
-    ~piece_table();
+    public:
 
-    piece_table(const std::string initial_content);
-    void insert(size_t position, std::string text);
-    void remove(size_t position, size_t length);
-    size_t get_index_for_line(size_t target_line) const;
-    std::string to_string() const;
-    size_t length() const;
-};
+        piece_table();
+        ~piece_table();
+
+        piece_table(const std::string initial_content);
+        void insert(size_t position, std::string text);
+        void remove(size_t position, size_t length);
+        size_t get_index_for_line(size_t target_line) const;
+        std::string to_string() const;
+        size_t length() const;
+    };
+} // namespace AL

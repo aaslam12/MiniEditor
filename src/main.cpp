@@ -4,8 +4,8 @@
 
 int main(int argc, char* argv[])
 {
-    implicit_treap imp;
-    piece_table pt;
+    AL::implicit_treap imp;
+    AL::piece_table pt;
 
     std::cout << "Hello World!\n";
     std::cout << "Hello World!\n";
