@@ -2,22 +2,37 @@
 import argparse
 import os
 import platform
+import shutil
 import subprocess
 import sys
-import shutil
+
 
 def main():
     parser = argparse.ArgumentParser(description="Build, test, and run the MiniEditor.")
-    parser.add_argument("--config", default="Debug", choices=["Debug", "Release"], 
-                        help="Build configuration (default: Debug)")
-    parser.add_argument("--clean", action="store_true", 
-                        help="Clean build directory before building")
-    parser.add_argument("--build-only", action="store_true", 
-                        help="Only build, do not run tests or executable")
-    parser.add_argument("--no-tests", action="store_true", 
-                        help="Disable building and running tests (default for Release)")
-    parser.add_argument("--stress-test", action="store_true", 
-                        help="Build and run stress tests")
+    parser.add_argument(
+        "--config",
+        default="Debug",
+        choices=["Debug", "Release"],
+        help="Build configuration (default: Debug)",
+    )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Clean build directory before building",
+    )
+    parser.add_argument(
+        "--build-only",
+        action="store_true",
+        help="Only build, do not run tests or executable",
+    )
+    parser.add_argument(
+        "--no-tests",
+        action="store_true",
+        help="Disable building and running tests (default for Release)",
+    )
+    parser.add_argument(
+        "--stress-test", action="store_true", help="Build and run stress tests"
+    )
 
     args = parser.parse_args()
 
@@ -33,9 +48,12 @@ def main():
 
     # --- Clean Step ---
     if args.clean:
-        print(f"=== Cleaning {build_dir} ===")
-        if os.path.exists(build_dir):
-            shutil.rmtree(build_dir)
+        temp_build_dir = os.path.join(project_root, "build")
+        print(f"=== Cleaning {temp_build_dir} ===")
+        if os.path.exists(temp_build_dir):
+            shutil.rmtree(temp_build_dir)
+        os.remove(os.path.join(project_root, "compile_commands.json"))
+        sys.exit(0)
 
     # --- Configuration Step ---
     print(f"=== Configuring ({args.config}) ===")
@@ -44,19 +62,19 @@ def main():
     # Determine if tests should be enabled
     # Default: Enable tests only in Debug mode
     build_tests = (args.config == "Debug") and not args.no_tests
- 
+
     cmake_args = [
         f"-DCMAKE_BUILD_TYPE={args.config}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         f"-DMINIEDITOR_BUILD_TESTS={'ON' if build_tests else 'OFF'}",
-        f"-DMINIEDITOR_BUILD_STRESS_TESTS={'ON' if args.stress_test else 'OFF'}"
+        f"-DMINIEDITOR_BUILD_STRESS_TESTS={'ON' if args.stress_test else 'OFF'}",
     ]
 
     # Generator selection: Prefer Ninja if available, else let CMake decide
     cmd_config = ["cmake", "-S", project_root, "-B", build_dir]
     if shutil.which("ninja"):
         cmd_config.extend(["-G", "Ninja"])
- 
+
     cmd_config.extend(cmake_args)
     subprocess.check_call(cmd_config)
 
@@ -65,7 +83,6 @@ def main():
     cpu_count = os.cpu_count() or 1
     subprocess.check_call(["cmake", "--build", build_dir, "--parallel", str(cpu_count)])
 
-
     # --- Post-Build ---
     # Symlink compile_commands.json to root for clangd support
     compile_commands_src = os.path.join(build_dir, "compile_commands.json")
@@ -73,9 +90,11 @@ def main():
 
     if os.path.exists(compile_commands_src):
         try:
-            if os.path.exists(compile_commands_dst) or os.path.islink(compile_commands_dst):
+            if os.path.exists(compile_commands_dst) or os.path.islink(
+                compile_commands_dst
+            ):
                 os.remove(compile_commands_dst)
- 
+
             try:
                 os.symlink(compile_commands_src, compile_commands_dst)
             except OSError:
@@ -93,10 +112,12 @@ def main():
         print("\n=== Running Tests ===")
         try:
             # ctest handles running the registered tests
-            subprocess.check_call(["ctest", "--output-on-failure", "--test-dir", build_dir])
+            subprocess.check_call(
+                ["ctest", "--output-on-failure", "--test-dir", build_dir]
+            )
         except subprocess.CalledProcessError:
             print("Tests failed.")
-            # We don't exit here to allow running the app if desired, 
+            # We don't exit here to allow running the app if desired,
             # mirroring the '|| true' behavior of the original script.
 
     # --- Stress Test Step ---
@@ -122,7 +143,9 @@ def main():
                         except subprocess.CalledProcessError:
                             print(f"!!! FAILED: {test_name}")
                     else:
-                        print(f"Warning: Executable for {test_name} not found (build might have failed).")
+                        print(
+                            f"Warning: Executable for {test_name} not found (build might have failed)."
+                        )
 
             if not found_tests:
                 print("No .cpp files found in stress_tests/.")
@@ -139,6 +162,7 @@ def main():
     else:
         print(f"Error: Executable not found at {executable_path}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

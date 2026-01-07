@@ -7,31 +7,31 @@
 namespace AL
 {
 
-    /*
-     * Piece table created using an Implicit Treap
-     */
-    class piece_table
-    {
-    private:
+/*
+ * Piece table created using an Implicit Treap
+ */
+class piece_table
+{
+private:
 
-        std::string m_original_buffer;
-        std::string m_add_buffer;
-        AL::implicit_treap m_treap;
+    std::string m_original_buffer;
+    std::string m_add_buffer;
+    AL::implicit_treap m_treap;
 
-        // normalizes string IN PLACE
-        // replaces OS specific line endings with '\n'
-        void normalize(std::string& text);
+    // normalizes string IN PLACE
+    // replaces OS specific line endings with '\n'
+    void normalize(std::string& text);
 
-    public:
+public:
 
-        piece_table();
-        ~piece_table();
+    piece_table();
+    ~piece_table();
 
-        piece_table(const std::string initial_content);
-        void insert(size_t position, std::string text);
-        void remove(size_t position, size_t length);
-        size_t get_index_for_line(size_t target_line) const;
-        std::string to_string() const;
-        size_t length() const;
-    };
+    piece_table(const std::string initial_content);
+    void insert(size_t position, std::string text);
+    void remove(size_t position, size_t length);
+    size_t get_index_for_line(size_t target_line) const;
+    std::string to_string() const;
+    size_t length() const;
+};
 } // namespace AL
