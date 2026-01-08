@@ -50,30 +50,6 @@ node* implicit_treap::find(size_t index) const
     return find(index, m_root);
 }
 
-void implicit_treap::insert(size_t index, const piece& value)
-{
-    if (value.length == 0)
-        return;
-
-    node *l = nullptr, *r = nullptr;
-    node* new_node = new node(value);
-
-    split(m_root, index, l, r);
-    m_root = merge(merge(l, new_node), r);
-}
-
-void implicit_treap::erase(size_t index, size_t length)
-{
-    if (length == 0)
-        return;
-
-    node *l, *r, *m;
-    split(m_root, index, l, r);
-    split(r, length, m, r);
-    delete_nodes(m);
-    m_root = merge(l, r);
-}
-
 size_t implicit_treap::size() const
 {
     return get_subtree_length(m_root);
@@ -82,49 +58,6 @@ size_t implicit_treap::size() const
 bool implicit_treap::empty() const
 {
     return !m_root;
-}
-
-void implicit_treap::split(node* current, size_t index, node*& l, node*& r)
-{
-    if (!current)
-    {
-        l = r = nullptr;
-        return;
-    }
-
-    size_t left_len = get_subtree_length(current->left);
-    if (index <= left_len)
-    {
-        split(current->left, index, l, current->left);
-        r = current;
-    }
-    else if (index > left_len && index < left_len + current->data.length)
-    {
-        // We need to split the current node
-        size_t split_offset = index - left_len;
-
-        // The right part of the piece becomes a new node
-        piece right_piece = {
-            .buf_type = current->data.buf_type, .start = current->data.start + split_offset, .length = current->data.length - split_offset};
-        node* new_node = new node(right_piece);
-
-        // The current node is truncated to become the left part
-        current->data.length = split_offset;
-
-        // The new_node is inserted to the right of current
-        new_node->right = current->right;
-        current->right = new_node;
-
-        // Now we can split normally. The split point is right after `current`.
-        split(current, index, l, r);
-    }
-    else
-    {
-        split(current->right, index - left_len - current->data.length, current->right, r);
-        l = current;
-    }
-
-    current->update_size();
 }
 
 node* implicit_treap::merge(node* l, node* r)
@@ -155,12 +88,14 @@ node* implicit_treap::copy_nodes(const node* n)
     p.buf_type = n->data.buf_type;
     p.length = n->data.length;
     p.start = n->data.start;
+    p.newline_count = n->data.newline_count;
 
     node* new_node = new node(p);
     new_node->priority = n->priority;
     new_node->left = copy_nodes(n->left);
     new_node->right = copy_nodes(n->right);
     new_node->subtree_length = n->subtree_length;
+    new_node->subtree_newline_count = n->subtree_newline_count;
 
     return new_node;
 }

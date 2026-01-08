@@ -65,6 +65,17 @@ target_include_directories(core
 # Compiler options specific to core
 target_compile_features(core PUBLIC cxx_std_20)
 
+# Define macros for build type and testing
+if(MINIEDITOR_BUILD_TESTS)
+  target_compile_definitions(core PUBLIC MINIEDITOR_TESTING)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_compile_definitions(core PUBLIC MINIEDITOR_DEBUG)
+else()
+  target_compile_definitions(core PUBLIC MINIEDITOR_RELEASE)
+endif()
+
 if(MINIEDITOR_ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_options(core PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
   target_link_options(core PRIVATE -fsanitize=address,undefined)
@@ -74,10 +85,14 @@ endif()
 # -----------------------
 # Executable
 # -----------------------
-find_package(Curses REQUIRED)
+find_library(PDCURSES_LIBRARY NAMES pdcurses XCurses REQUIRED)
+find_path(PDCURSES_INCLUDE_DIR NAMES curses.h pdcurses.h xcurses.h REQUIRED)
+message(STATUS "Using PDCurses: ${PDCURSES_LIBRARY}")
+message(STATUS "Using PDCurses headers: ${PDCURSES_INCLUDE_DIR}")
+
 add_executable(minieditor "${MAIN_CPP}")
-target_link_libraries(minieditor PRIVATE core ${CURSES_LIBRARIES})
-target_include_directories(minieditor PRIVATE ${CURSES_INCLUDE_DIRS})
+target_link_libraries(minieditor PRIVATE core ${PDCURSES_LIBRARY})
+target_include_directories(minieditor PRIVATE ${PDCURSES_INCLUDE_DIR})
 
 if(MINIEDITOR_ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   # also apply sanitizer flags to the exe to ensure linking works

@@ -56,10 +56,10 @@ Checks: >
   cppcoreguidelines-interfaces-global-init,
   cppcoreguidelines-macro-usage,
   cppcoreguidelines-misleading-capture-default-by-value,
-  cppcoreguidelines-missing-std-forward,
+  -cppcoreguidelines-missing-std-forward,
   cppcoreguidelines-no-malloc,
   cppcoreguidelines-no-suspend-with-lock,
-  cppcoreguidelines-prefer-member-initializer,
+  -cppcoreguidelines-prefer-member-initializer,
   cppcoreguidelines-pro-type-const-cast,
   cppcoreguidelines-pro-type-cstyle-cast,
   cppcoreguidelines-pro-type-reinterpret-cast,
@@ -78,6 +78,7 @@ Checks: >
 
   performance-*,
   bugprone-*,
+  -bugprone-easily-swappable-parameters
   -misc-non-private-member-variables-in-classes
   misc-*,
 

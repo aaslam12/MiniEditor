@@ -36,7 +36,7 @@ int main()
             // Create random string
             int str_len = len_dist(rng);
             std::string s;
-            s.resize(str_len);
+            s.reserve(str_len);
             for (int k = 0; k < str_len; ++k)
                 s += (char)char_dist(rng);
 

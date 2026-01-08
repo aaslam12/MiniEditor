@@ -17,8 +17,9 @@ enum class buffer_type : uint8_t
 struct piece
 {
     buffer_type buf_type;
-    size_t start;  // offset in the buffer
-    size_t length; // refers to bytes
+    size_t start;         // offset in the buffer
+    size_t length;        // refers to bytes
+    size_t newline_count; // how many newlines in THIS piece
 };
 
 struct node
@@ -37,30 +38,45 @@ struct node
 
     piece data;
     uint64_t priority{};
-    size_t subtree_length; // size of subtree rooted at this node
-    node* left;            // nodes STRICTLY before (not including this node)
-    node* right;           // nodes STRICTLY after (not including this node)
+    size_t subtree_length;        // size of subtree rooted at this node
+    size_t subtree_newline_count; // how many newlines in entire subtree
+    node* left;                   // nodes STRICTLY before (not including this node)
+    node* right;                  // nodes STRICTLY after (not including this node)
     void update_size()
     {
         size_t x = 0;
+        size_t y = 0;
 
         if (left)
+        {
             x += left->subtree_length;
+            y += left->subtree_newline_count;
+        }
         if (right)
+        {
             x += right->subtree_length;
+            y += right->subtree_newline_count;
+        }
 
+        subtree_newline_count = y + data.newline_count;
         subtree_length = x + data.length;
     }
 
-    node(const piece& data) : data(data), priority(rng()), subtree_length(data.length), left(nullptr), right(nullptr)
+    node(const piece& data) : data(data), priority(rng()), subtree_length(data.length), subtree_newline_count(0), left(nullptr), right(nullptr)
     {}
 };
 
-// concepts to restrict the callback to correct signature for the for_each function in implicit_treap
+// concepts to restrict the callback to correct signature for the for_each function
 template<typename T>
 concept piece_callback = requires(T func, const piece& p) {
     { func(p) } -> std::convertible_to<bool>;
 };
+
+// concepts to restrict the callback to correct signature for the split comparator function
+// template<typename T>
+// concept split_strategy = requires(T func, piece& p, const size_t split_offset) {
+//     { func(p, split_offset) } -> std::convertible_to<piece>;
+// };
 
 /*
  * This is an implicit treap.
@@ -125,9 +141,6 @@ public:
 
     // finds and returns the node with the containing index
     node* find(size_t index) const;
-    void insert(size_t index, const piece& value);
-    void erase(size_t index, size_t length);
-    void split(node* root, size_t index, node*& left, node*& right);
     node* merge(node* l, node* r);
     size_t size() const;
     bool empty() const;
@@ -143,5 +156,124 @@ public:
     {
         for_each(m_root, std::forward<func_callback>(callback));
     }
+
+    template<typename split_strategy>
+    void insert(size_t index, const piece& value, split_strategy&& callback)
+    {
+        if (value.length == 0)
+            return;
+
+        node *l = nullptr, *r = nullptr;
+        node* new_node = new node(value);
+
+        split(m_root, index, l, r, std::forward<split_strategy>(callback));
+        m_root = merge(merge(l, new_node), r);
+    }
+
+    template<typename split_strategy>
+    void erase(size_t index, size_t length, split_strategy&& callback)
+    {
+        if (length == 0)
+            return;
+
+        node *l, *r, *m;
+        split(m_root, index, l, r, callback);
+        split(r, length, m, r, callback);
+        delete_nodes(m);
+        m_root = merge(l, r);
+    }
+
+    // callback should handle how the right node should be split
+    // 1. Modify the original piece to become the "Left Half".
+    // 2. Create and return a new piece that represents the "Right Half".
+    template<typename split_strategy>
+    void split(node* current, size_t index, node*& l, node*& r, split_strategy&& callback)
+    {
+        if (!current)
+        {
+            l = r = nullptr;
+            return;
+        }
+
+        size_t left_len = get_subtree_length(current->left);
+        if (index <= left_len)
+        {
+            split(current->left, index, l, current->left, callback);
+            r = current;
+        }
+        else if (index > left_len && index < left_len + current->data.length)
+        {
+            // We need to split the current node
+            size_t split_offset = index - left_len;
+
+            // The right part of the piece becomes a new node
+            piece right_piece = callback(current->data, split_offset);
+            node* new_node = new node(right_piece);
+
+            // The current node is truncated to become the left part
+            current->data.length = split_offset;
+
+            // The new_node is inserted to the right of current
+            new_node->right = current->right;
+            current->right = new_node;
+
+            // Now we can split normally. The split point is right after `current`.
+            split(current, index, l, r, callback);
+        }
+        else
+        {
+            split(current->right, index - left_len - current->data.length, current->right, r, callback);
+            l = current;
+        }
+
+        current->update_size();
+    }
 };
 } // namespace AL
+//
+//
+//
+// template<typename split_strategy>
+// void split(node* current, size_t index, node*& l, node*& r, split_strategy& callback)
+// {
+//     if (!current)
+//     {
+//         l = r = nullptr;
+//         return;
+//     }
+//
+//     size_t left_len = get_subtree_length(current->left);
+//     if (index <= left_len)
+//     {
+//         split(current->left, index, l, current->left, callback);
+//         r = current;
+//     }
+//     else if (index > left_len && index < left_len + current->data.length)
+//     {
+//         // We need to split the current node
+//         size_t split_offset = index - left_len;
+//
+//         // The right part of the piece becomes a new node
+//         piece right_piece = {
+//             .buf_type = current->data.buf_type, .start = current->data.start + split_offset, .length = current->data.length - split_offset};
+//         node* new_node = new node(right_piece);
+//
+//         // The current node is truncated to become the left part
+//         current->data.length = split_offset;
+//
+//         // The new_node is inserted to the right of current
+//         new_node->right = current->right;
+//         current->right = new_node;
+//
+//         // Now we can split normally. The split point is right after `current`.
+//         split(current, index, l, r, callback);
+//     }
+//     else
+//     {
+//         split(current->right, index - left_len - current->data.length, current->right, r, callback);
+//         l = current;
+//     }
+//
+//     current->update_size();
+// }
+//
