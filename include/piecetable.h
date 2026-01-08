@@ -30,6 +30,7 @@ public:
     piece_table(const std::string initial_content);
     void insert(size_t position, std::string text);
     void remove(size_t position, size_t length);
+    void clear();
     size_t get_index_for_line(size_t target_line) const;
     std::string to_string() const;
     size_t length() const;

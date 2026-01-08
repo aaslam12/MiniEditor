@@ -65,6 +65,13 @@ void piece_table::remove(size_t position, size_t length)
     m_treap.erase(position, length);
 }
 
+void piece_table::clear()
+{
+    m_original_buffer.empty();
+    m_add_buffer.empty();
+    m_treap.empty();
+}
+
 bool contains_substring_in_range(const std::string& source, const std::string& target, size_t start_index, size_t endIndex)
 {
     if (start_index >= source.length() || start_index >= endIndex)
@@ -122,7 +129,7 @@ size_t piece_table::get_index_for_line(size_t target_line) const
 std::string piece_table::to_string() const
 {
     std::string result;
-    result.reserve(m_treap.size());
+    result.resize(m_treap.size());
 
     m_treap.for_each([&result, this](const AL::piece& p) {
         if (p.buf_type == AL::buffer_type::ORIGINAL)

@@ -74,8 +74,10 @@ endif()
 # -----------------------
 # Executable
 # -----------------------
+find_package(Curses REQUIRED)
 add_executable(minieditor "${MAIN_CPP}")
-target_link_libraries(minieditor PRIVATE core)
+target_link_libraries(minieditor PRIVATE core ${CURSES_LIBRARIES})
+target_include_directories(minieditor PRIVATE ${CURSES_INCLUDE_DIRS})
 
 if(MINIEDITOR_ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   # also apply sanitizer flags to the exe to ensure linking works
