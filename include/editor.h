@@ -36,16 +36,12 @@ struct cursor
  * Responsible for:
  * - File I/O operations (loading and saving files)
  * - File metadata management (name, path, modification state)
- * - Session state tracking (cursor position, undo/redo history, view state)
+ * - Session state tracking (cursor position, view state)
  * - Text manipulation and editing operations
- *
- * Uses batching to efficiently batch pieces in the implicit treap data structure
- * for optimized text storage and retrieval.
  */
 class editor
 {
 public:
-
     editor();
     ~editor();
 
@@ -53,8 +49,11 @@ public:
     bool save();
     bool save(const std::filesystem::path& path);
 
-private:
+    void insert_char(char c);
+    void delete_char();
+    void move_cursor(direction dir);
 
+private:
     piece_table m_piece_table;
     std::filesystem::path m_current_file_path;
     bool m_dirty; // whether file was edited but not saved.
@@ -64,8 +63,5 @@ private:
     // return true for quitting successfully
     // force quitting means data loss.
     bool quit(bool force_quit = false, bool save_automatically = false);
-    void insert_char(char c);
-    void delete_char();
-    void move_cursor(direction dir);
 };
 } // namespace AL
