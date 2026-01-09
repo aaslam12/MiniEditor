@@ -44,7 +44,7 @@ bool editor::open(const std::filesystem::path& path)
     std::string str;
     if (size_known)
     {
-        str.reserve(static_cast<std::size_t>(size));
+        str.resize(static_cast<std::size_t>(size));
         ifs.read(str.data(), str.size());
 
         const auto bytes = ifs.gcount(); // for race conditions and if a file changed after we read

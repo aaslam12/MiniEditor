@@ -116,6 +116,9 @@ size_t piece_table::get_index_for_line(size_t target_line) const
     }
 
     size_t lines_so_far = implicit_treap::get_subtree_newlines(n->left) + 1;
+    if (target_line == lines_so_far)
+        return byte_offset;
+
     const std::string& buffer = p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer;
 
     // string_view::find for AVX instructions speed up

@@ -52,7 +52,8 @@ def main():
         print(f"=== Cleaning {temp_build_dir} ===")
         if os.path.exists(temp_build_dir):
             shutil.rmtree(temp_build_dir)
-        os.remove(os.path.join(project_root, "compile_commands.json"))
+        if os.path.isfile(os.path.join(project_root, "compile_commands.json")):
+            os.remove(os.path.join(project_root, "compile_commands.json"))
         sys.exit(0)
 
     # --- Configuration Step ---
