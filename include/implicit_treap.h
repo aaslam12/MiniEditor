@@ -95,15 +95,22 @@ concept piece_callback = requires(T func, const piece& p) {
 class implicit_treap
 {
 private:
-
     node* m_root;
 
+public:
     inline static size_t get_subtree_length(const node* x)
     {
         return x ? x->subtree_length : 0;
     }
 
+    inline static size_t get_subtree_newlines(const node* x)
+    {
+        return x ? x->subtree_newline_count : 0;
+    }
+
+private:
     node* find(size_t index, node* current) const;
+    void find_by_line(size_t line_number, node* current, node*& n, size_t& byte_offset) const;
     void delete_nodes(node* n);
     node* copy_nodes(const node* n); // performs deep copy
     void get_pieces(node* n, std::vector<piece>& pieces) const;
@@ -130,7 +137,6 @@ private:
     }
 
 public:
-
     implicit_treap();
     ~implicit_treap();
 
@@ -141,6 +147,7 @@ public:
 
     // finds and returns the node with the containing index
     node* find(size_t index) const;
+    void find_by_line(size_t line_number, node*& n, size_t& byte_offset) const;
     node* merge(node* l, node* r);
     size_t size() const;
     bool empty() const;
@@ -230,50 +237,3 @@ public:
     }
 };
 } // namespace AL
-//
-//
-//
-// template<typename split_strategy>
-// void split(node* current, size_t index, node*& l, node*& r, split_strategy& callback)
-// {
-//     if (!current)
-//     {
-//         l = r = nullptr;
-//         return;
-//     }
-//
-//     size_t left_len = get_subtree_length(current->left);
-//     if (index <= left_len)
-//     {
-//         split(current->left, index, l, current->left, callback);
-//         r = current;
-//     }
-//     else if (index > left_len && index < left_len + current->data.length)
-//     {
-//         // We need to split the current node
-//         size_t split_offset = index - left_len;
-//
-//         // The right part of the piece becomes a new node
-//         piece right_piece = {
-//             .buf_type = current->data.buf_type, .start = current->data.start + split_offset, .length = current->data.length - split_offset};
-//         node* new_node = new node(right_piece);
-//
-//         // The current node is truncated to become the left part
-//         current->data.length = split_offset;
-//
-//         // The new_node is inserted to the right of current
-//         new_node->right = current->right;
-//         current->right = new_node;
-//
-//         // Now we can split normally. The split point is right after `current`.
-//         split(current, index, l, r, callback);
-//     }
-//     else
-//     {
-//         split(current->right, index - left_len - current->data.length, current->right, r, callback);
-//         l = current;
-//     }
-//
-//     current->update_size();
-// }
-//

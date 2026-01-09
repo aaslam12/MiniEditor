@@ -50,6 +50,39 @@ node* implicit_treap::find(size_t index) const
     return find(index, m_root);
 }
 
+void implicit_treap::find_by_line(size_t line_number, node* current, node*& n, size_t& byte_offset) const
+{
+    if (!current)
+        return;
+
+    const size_t left_newlines = get_subtree_newlines(current->left);
+
+    if (line_number < left_newlines)
+    {
+        // entirely in left subtree
+        find_by_line(line_number, current->left, n, byte_offset);
+    }
+    else if (line_number <= left_newlines + 1 + current->data.newline_count)
+    {
+        // entirely in current node
+        byte_offset += get_subtree_length(current->left);
+        n = current;
+    }
+    else
+    {
+        // entirely in right node
+        byte_offset += get_subtree_length(current->left) + current->data.length;
+        find_by_line(line_number - 1 - left_newlines - current->data.newline_count, current->right, n, byte_offset);
+    }
+}
+
+void implicit_treap::find_by_line(size_t line_number, node*& n, size_t& byte_offset) const
+{
+    byte_offset = 0;
+    n = nullptr;
+    find_by_line(line_number, m_root, n, byte_offset);
+}
+
 size_t implicit_treap::size() const
 {
     return get_subtree_length(m_root);

@@ -17,8 +17,8 @@ const auto split_func = [](AL::piece& left, size_t split_offset) {
 TEST_CASE("implicit_treap Initialization", "[ImplicitTreap]")
 {
     implicit_treap treap;
-    REQUIRE(treap.size() == 0);
-    REQUIRE(treap.empty() == true);
+    CHECK(treap.size() == 0);
+    CHECK(treap.empty() == true);
 }
 
 // Tests for Insertion
@@ -28,19 +28,19 @@ TEST_CASE("implicit_treap Insertion", "[ImplicitTreap]")
 
     // Insert at the beginning of an empty treap
     treap.insert(0, {.buf_type = buffer_type::ADD, .start = 0, .length = 1, .newline_count = 0}, split_func);
-    REQUIRE(treap.size() == 1);
+    CHECK(treap.size() == 1);
 
     // Insert at the end
     treap.insert(1, {.buf_type = buffer_type::ADD, .start = 1, .length = 1, .newline_count = 0}, split_func);
-    REQUIRE(treap.size() == 2);
+    CHECK(treap.size() == 2);
 
     // Insert in the middle
     treap.insert(1, {.buf_type = buffer_type::ADD, .start = 2, .length = 1, .newline_count = 0}, split_func);
-    REQUIRE(treap.size() == 3);
+    CHECK(treap.size() == 3);
 
     // Insert at the front
     treap.insert(0, {.buf_type = buffer_type::ADD, .start = 3, .length = 1, .newline_count = 0}, split_func);
-    REQUIRE(treap.size() == 4);
+    CHECK(treap.size() == 4);
 }
 
 // Tests for Deletion
@@ -51,24 +51,24 @@ TEST_CASE("implicit_treap Deletion", "[ImplicitTreap]")
     treap.insert(1, {.buf_type = buffer_type::ADD, .start = 1, .length = 1, .newline_count = 0}, split_func);
     treap.insert(2, {.buf_type = buffer_type::ADD, .start = 2, .length = 1, .newline_count = 0}, split_func);
     treap.insert(3, {.buf_type = buffer_type::ADD, .start = 3, .length = 1, .newline_count = 0}, split_func);
-    REQUIRE(treap.size() == 4);
+    CHECK(treap.size() == 4);
 
     // Delete from the middle
     treap.erase(1, 1, split_func); // delete 2nd item
-    REQUIRE(treap.size() == 3);
+    CHECK(treap.size() == 3);
 
     // Delete from the beginning
     treap.erase(0, 1, split_func); // delete 1st item
-    REQUIRE(treap.size() == 2);
+    CHECK(treap.size() == 2);
 
     // Delete from the end
     treap.erase(1, 1, split_func); // delete last item (at index 1 of 2)
-    REQUIRE(treap.size() == 1);
+    CHECK(treap.size() == 1);
 
     // Delete the last element
     treap.erase(0, 1, split_func);
-    REQUIRE(treap.size() == 0);
-    REQUIRE(treap.empty() == true);
+    CHECK(treap.size() == 0);
+    CHECK(treap.empty() == true);
 }
 
 // Tests for Mixed Operations
@@ -78,18 +78,18 @@ TEST_CASE("implicit_treap Mixed Operations", "[ImplicitTreap]")
     std::string text = "This is a test";
     treap.insert(0, {.buf_type = buffer_type::ORIGINAL, .start = 0, .length = text.length(), .newline_count = 0}, split_func);
 
-    REQUIRE(treap.size() == text.length());
+    CHECK(treap.size() == text.length());
 
     // Erase " a"
     treap.erase(7, 2, split_func);
-    REQUIRE(treap.size() == text.length() - 2);
+    CHECK(treap.size() == text.length() - 2);
 
     // Insert " an example"
     std::string insert_text = "an example";
     treap.insert(7, {.buf_type = buffer_type::ADD, .start = 0, .length = insert_text.length(), .newline_count = 0}, split_func);
 
     std::string expected = "This is an exampletest";
-    REQUIRE(treap.size() == expected.length());
+    CHECK(treap.size() == expected.length());
 }
 
 // Tests for Edge Cases
@@ -99,9 +99,9 @@ TEST_CASE("implicit_treap Edge Cases", "[ImplicitTreap]")
 
     // Operations on an empty treap
     REQUIRE_NOTHROW(treap.insert(0, {buffer_type::ADD, 0, 1, 0}, split_func));
-    REQUIRE(treap.size() == 1);
+    CHECK(treap.size() == 1);
     REQUIRE_NOTHROW(treap.erase(0, 1, split_func));
-    REQUIRE(treap.size() == 0);
+    CHECK(treap.size() == 0);
 
     // Large number of insertions
     size_t large_number = 1000;
@@ -109,13 +109,13 @@ TEST_CASE("implicit_treap Edge Cases", "[ImplicitTreap]")
     {
         treap.insert(i, {.buf_type = buffer_type::ADD, .start = (size_t)i, .length = 1, .newline_count = 0}, split_func);
     }
-    REQUIRE(treap.size() == large_number);
+    CHECK(treap.size() == large_number);
 
     // Large number of deletions from the front
     for (size_t i = 0; i < large_number; ++i)
     {
         treap.erase(0, 1, split_func);
     }
-    REQUIRE(treap.size() == 0);
-    REQUIRE(treap.empty() == true);
+    CHECK(treap.size() == 0);
+    CHECK(treap.empty() == true);
 }

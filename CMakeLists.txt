@@ -55,6 +55,8 @@ list(FILTER ALL_SRC EXCLUDE REGEX ".*/main.cpp$")
 # -----------------------
 # Core library
 # -----------------------
+find_library(PDCURSES_LIBRARY NAMES pdcurses XCurses REQUIRED)
+find_path(PDCURSES_INCLUDE_DIR NAMES curses.h pdcurses.h xcurses.h REQUIRED)
 add_library(core STATIC ${ALL_SRC})
 target_include_directories(core
   PUBLIC
@@ -64,6 +66,8 @@ target_include_directories(core
 
 # Compiler options specific to core
 target_compile_features(core PUBLIC cxx_std_20)
+target_link_libraries(core PUBLIC ${PDCURSES_LIBRARY})
+target_include_directories(core PUBLIC ${PDCURSES_INCLUDE_DIR})
 
 # Define macros for build type and testing
 if(MINIEDITOR_BUILD_TESTS)
@@ -85,8 +89,6 @@ endif()
 # -----------------------
 # Executable
 # -----------------------
-find_library(PDCURSES_LIBRARY NAMES pdcurses XCurses REQUIRED)
-find_path(PDCURSES_INCLUDE_DIR NAMES curses.h pdcurses.h xcurses.h REQUIRED)
 message(STATUS "Using PDCurses: ${PDCURSES_LIBRARY}")
 message(STATUS "Using PDCurses headers: ${PDCURSES_INCLUDE_DIR}")
 

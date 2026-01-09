@@ -51,7 +51,7 @@ piece_table::piece_table(std::string initial_content)
     piece.length = m_original_buffer.length();
     piece.buf_type = AL::buffer_type::ORIGINAL;
     piece.start = 0;
-    piece.newline_count = count_newlines(initial_content);
+    piece.newline_count = count_newlines(m_original_buffer);
 
     m_treap.insert(0, piece, get_split_strategy());
 }
@@ -99,39 +99,43 @@ void piece_table::clear()
 
 size_t piece_table::get_index_for_line(size_t target_line) const
 {
-    if (target_line <= 1)
+    if (target_line <= 1 || m_treap.empty())
         return 0;
 
-    size_t found_index = (size_t)-1; // final result
-    size_t current_line = 1;         // what LINE am i on?
-    size_t global_index = 0;         // how many characters have i passed?
+    node* n;
+    size_t byte_offset;
+    m_treap.find_by_line(target_line, n, byte_offset);
 
-    m_treap.for_each([&current_line, &global_index, &found_index, &target_line, this](const AL::piece& p) {
-        if (found_index != (size_t)-1)
-            return true;
+    if (!n)
+        return length();
+    piece p = n->data;
 
-        // std::string_view::find can use AVX instructions that can significantly increase performance
-        std::string_view search_window((p.buf_type == AL::buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer).data() + p.start, p.length);
+    if (p.newline_count == 0)
+    {
+        return byte_offset;
+    }
 
-        size_t last_found = 0;
-        for (size_t i = search_window.find('\n'); i != std::string::npos; i = search_window.find('\n', last_found))
-        {
-            last_found = i + 1;
-            current_line++;
+    size_t lines_so_far = implicit_treap::get_subtree_newlines(n->left) + 1;
+    const std::string& buffer = p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer;
 
-            if (current_line == target_line)
-            {
-                found_index = global_index + i + 1;
-                return true;
-            }
-        }
+    // string_view::find for AVX instructions speed up
+    std::string_view search_window(buffer.data() + p.start, p.length);
+    size_t last_found = 0;
 
-        // wasnt in this piece. go to the next piece.
-        global_index += p.length;
-        return false;
-    });
+    // pos is the index of the new line found
+    for (size_t pos = search_window.find('\n', 0); pos != std::string::npos; pos = search_window.find('\n', pos))
+    {
+        // found a new line
+        lines_so_far++;
+        last_found = pos;
 
-    return (found_index == (size_t)-1) ? length() : found_index;
+        if (target_line == lines_so_far)
+            return byte_offset + last_found + 1;
+
+        pos++;
+    }
+
+    return length();
 }
 
 std::string piece_table::to_string() const

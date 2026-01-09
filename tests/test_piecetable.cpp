@@ -8,13 +8,13 @@ TEST_CASE("piece_table Initialization", "[piecetable]")
 {
     // Test case 1: Default constructor creates an empty document.
     piece_table pt_empty;
-    REQUIRE(pt_empty.length() == 0);
-    REQUIRE(pt_empty.to_string() == "");
+    CHECK(pt_empty.length() == 0);
+    CHECK(pt_empty.to_string() == "");
 
     // Test case 2: Constructor with initial content.
     piece_table pt_initial("Hello, world!");
-    REQUIRE(pt_initial.length() == 13);
-    REQUIRE(pt_initial.to_string() == "Hello, world!");
+    CHECK(pt_initial.length() == 13);
+    CHECK(pt_initial.to_string() == "Hello, world!");
 }
 
 // Tests the insert functionality.
@@ -24,23 +24,23 @@ TEST_CASE("piece_table Insertion", "[piecetable]")
 
     // Test case 1: Insert at the beginning.
     pt.insert(0, "Awesome ");
-    REQUIRE(pt.length() == 20);
-    REQUIRE(pt.to_string() == "Awesome Hello world!");
+    CHECK(pt.length() == 20);
+    CHECK(pt.to_string() == "Awesome Hello world!");
 
     // Test case 2: Insert in the middle.
     pt.insert(8, "new ");
-    REQUIRE(pt.length() == 24);
-    REQUIRE(pt.to_string() == "Awesome new Hello world!");
+    CHECK(pt.length() == 24);
+    CHECK(pt.to_string() == "Awesome new Hello world!");
 
     // Test case 3: Insert at the end.
     pt.insert(24, " It's a beautiful day.");
-    REQUIRE(pt.length() == 46);
-    REQUIRE(pt.to_string() == "Awesome new Hello world! It's a beautiful day.");
+    CHECK(pt.length() == 46);
+    CHECK(pt.to_string() == "Awesome new Hello world! It's a beautiful day.");
 
     // Test case 4: Insert empty string.
     pt.insert(8, "");
-    REQUIRE(pt.length() == 46);
-    REQUIRE(pt.to_string() == "Awesome new Hello world! It's a beautiful day.");
+    CHECK(pt.length() == 46);
+    CHECK(pt.to_string() == "Awesome new Hello world! It's a beautiful day.");
 }
 
 // Tests the delete functionality.
@@ -50,29 +50,29 @@ TEST_CASE("piece_table Deletion", "[piecetable]")
 
     // Test case 1: Delete from the beginning.
     pt.remove(0, 7); // "Hello, "
-    REQUIRE(pt.length() == 16);
-    REQUIRE(pt.to_string() == "beautiful world!");
+    CHECK(pt.length() == 16);
+    CHECK(pt.to_string() == "beautiful world!");
 
     // Test case 2: Delete from the middle.
     pt.remove(0, 10); // "beautiful "
-    REQUIRE(pt.length() == 6);
-    REQUIRE(pt.to_string() == "world!");
+    CHECK(pt.length() == 6);
+    CHECK(pt.to_string() == "world!");
 
     // Test case 3: Delete from the end.
     pt.remove(5, 1); // "!"
-    REQUIRE(pt.length() == 5);
-    REQUIRE(pt.to_string() == "world");
+    CHECK(pt.length() == 5);
+    CHECK(pt.to_string() == "world");
 
     // Test case 4: Delete the entire content.
     pt.remove(0, 5);
-    REQUIRE(pt.length() == 0);
-    REQUIRE(pt.to_string() == "");
+    CHECK(pt.length() == 0);
+    CHECK(pt.to_string() == "");
 
     // Test case 5: Delete zero characters.
     piece_table pt2("No change");
     pt2.remove(3, 0);
-    REQUIRE(pt2.length() == 9);
-    REQUIRE(pt2.to_string() == "No change");
+    CHECK(pt2.length() == 9);
+    CHECK(pt2.to_string() == "No change");
 }
 
 // Tests a mix of insert and delete operations.
@@ -83,18 +83,18 @@ TEST_CASE("piece_table Mixed Operations", "[piecetable]")
     // Replace "a test" with "an example"
     pt.remove(8, 6); // "a test"
     pt.insert(8, "an example");
-    REQUIRE(pt.to_string() == "This is an example.");
-    REQUIRE(pt.length() == 19);
+    CHECK(pt.to_string() == "This is an example.");
+    CHECK(pt.length() == 19);
 
     // Prepend text
     pt.insert(0, "Note: ");
-    REQUIRE(pt.to_string() == "Note: This is an example.");
-    REQUIRE(pt.length() == 25);
+    CHECK(pt.to_string() == "Note: This is an example.");
+    CHECK(pt.length() == 25);
 
     // Delete from the middle
     pt.remove(4, 6); // ": This"
-    REQUIRE(pt.to_string() == "Note is an example.");
-    REQUIRE(pt.length() == 19);
+    CHECK(pt.to_string() == "Note is an example.");
+    CHECK(pt.length() == 19);
 }
 
 // Tests edge cases for the piece table.
@@ -107,31 +107,31 @@ TEST_CASE("piece_table Edge Cases", "[piecetable]")
         pt.insert(pt.length(), "a");
     }
     std::string expected(100, 'a');
-    REQUIRE(pt.length() == 100);
-    REQUIRE(pt.to_string() == expected);
+    CHECK(pt.length() == 100);
+    CHECK(pt.to_string() == expected);
 
     // Test case 2: A long series of small deletes from the start.
     for (int i = 0; i < 100; ++i)
     {
         pt.remove(0, 1);
     }
-    REQUIRE(pt.length() == 0);
-    REQUIRE(pt.to_string() == "");
+    CHECK(pt.length() == 0);
+    CHECK(pt.to_string() == "");
 
     // Test case 3: Operations on an empty table.
     piece_table pt_empty;
     pt_empty.insert(0, "hello");
-    REQUIRE(pt_empty.to_string() == "hello");
+    CHECK(pt_empty.to_string() == "hello");
     pt_empty.remove(0, 5);
-    REQUIRE(pt_empty.to_string() == "");
+    CHECK(pt_empty.to_string() == "");
 
     // Test case 4: Deleting more characters than available.
     // The behavior here might depend on implementation (throw or clamp).
     // We'll assume it clamps for now. A robust implementation should define this.
     piece_table pt_clamp("short");
     pt_clamp.remove(0, 100); // Try to delete more than exists
-    REQUIRE(pt_clamp.length() == 0);
-    REQUIRE(pt_clamp.to_string() == "");
+    CHECK(pt_clamp.length() == 0);
+    CHECK(pt_clamp.to_string() == "");
 }
 
 TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
@@ -139,13 +139,13 @@ TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
     // 1. Clamping on Insert (inserting way past the end)
     piece_table pt("Hello");
     pt.insert(999, " world");
-    REQUIRE(pt.to_string() == "Hello world");
-    REQUIRE(pt.length() == 11);
+    CHECK(pt.to_string() == "Hello world");
+    CHECK(pt.length() == 11);
 
     // 2. Splitting an ADD piece
     // Document: "Hello world" (1 piece: ADD)
     pt.insert(6, "beautiful ");
-    REQUIRE(pt.to_string() == "Hello beautiful world");
+    CHECK(pt.to_string() == "Hello beautiful world");
 
     // 3. Cross-Piece Deletion
     // Document: "Hello beautiful world"
@@ -153,7 +153,7 @@ TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
     // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
     // Let's delete "beautiful " (indices 6 to 15)
     pt.remove(6, 10);
-    REQUIRE(pt.to_string() == "Hello world");
+    CHECK(pt.to_string() == "Hello world");
 
     // 4. Repeated Middle Operations (Heavy Node Splitting)
     piece_table pt2("ABC");
@@ -161,24 +161,24 @@ TEST_CASE("piece_table Rigorous Operations", "[piecetable]")
     pt2.insert(2, "2"); // A12BC
     pt2.insert(3, "3"); // A123BC
     pt2.remove(1, 3);   // ABC
-    REQUIRE(pt2.to_string() == "ABC");
-    REQUIRE(pt2.length() == 3);
+    CHECK(pt2.to_string() == "ABC");
+    CHECK(pt2.length() == 3);
 
     // 5. Deleting from a single-character piece
     piece_table pt3("A");
     pt3.insert(1, "B");
     pt3.insert(2, "C");
     pt3.remove(1, 1); // remove 'B'
-    REQUIRE(pt3.to_string() == "AC");
+    CHECK(pt3.to_string() == "AC");
 }
 
 TEST_CASE("piece_table get_index_for_line", "[piecetable]")
 {
     // Case 1: Empty file
     piece_table pt_empty;
-    REQUIRE(pt_empty.get_index_for_line(0) == 0);
-    REQUIRE(pt_empty.get_index_for_line(1) == 0);
-    REQUIRE(pt_empty.get_index_for_line(5) == 0);
+    CHECK(pt_empty.get_index_for_line(0) == 0);
+    CHECK(pt_empty.get_index_for_line(1) == 0);
+    CHECK(pt_empty.get_index_for_line(5) == 0);
 
     // Case 2: Single piece, multiple lines
     // "Line 1\nLine 2\nLine 3"
@@ -186,11 +186,11 @@ TEST_CASE("piece_table get_index_for_line", "[piecetable]")
     // L i n e   1 \n L i n e   2 \n L i n e   3
     // 0 1 2 3 4 5 6  7 8 9 0 1 2 3  4 5 6 7 8 9
     piece_table pt_single("Line 1\nLine 2\nLine 3");
-    REQUIRE(pt_single.get_index_for_line(0) == 0);
-    REQUIRE(pt_single.get_index_for_line(1) == 0);
-    REQUIRE(pt_single.get_index_for_line(2) == 7);
-    REQUIRE(pt_single.get_index_for_line(3) == 14);
-    REQUIRE(pt_single.get_index_for_line(4) == 20); // Past the end returns length
+    CHECK(pt_single.get_index_for_line(0) == 0);
+    CHECK(pt_single.get_index_for_line(1) == 0);
+    CHECK(pt_single.get_index_for_line(2) == 7);
+    CHECK(pt_single.get_index_for_line(3) == 14);
+    CHECK(pt_single.get_index_for_line(4) == 20); // Past the end returns length
 
     // Case 3: Fragmented pieces (multi-piece lines)
     piece_table pt_frag("Part 1");
@@ -198,10 +198,10 @@ TEST_CASE("piece_table get_index_for_line", "[piecetable]")
     pt_frag.insert(pt_frag.length(), "Part 3");
     // String: "Part 1\nPart 2\nPart 3"
     // Length: 6 + 1 + 6 + 1 + 6 = 20
-    REQUIRE(pt_frag.to_string() == "Part 1\nPart 2\nPart 3");
-    REQUIRE(pt_frag.get_index_for_line(1) == 0);
-    REQUIRE(pt_frag.get_index_for_line(2) == 7);
-    REQUIRE(pt_frag.get_index_for_line(3) == 14);
+    CHECK(pt_frag.to_string() == "Part 1\nPart 2\nPart 3");
+    CHECK(pt_frag.get_index_for_line(1) == 0);
+    CHECK(pt_frag.get_index_for_line(2) == 7);
+    CHECK(pt_frag.get_index_for_line(3) == 14);
 
     // Case 4: Line split across pieces
     piece_table pt_split("Hello ");
@@ -211,13 +211,13 @@ TEST_CASE("piece_table get_index_for_line", "[piecetable]")
     // Indexes:
     // H e l l o   W o r l d \n N e x t
     // 0 1 2 3 4 5 6 7 8 9 0  1 2 3 4 5
-    REQUIRE(pt_split.get_index_for_line(1) == 0);
-    REQUIRE(pt_split.get_index_for_line(2) == 12);
+    CHECK(pt_split.get_index_for_line(1) == 0);
+    CHECK(pt_split.get_index_for_line(2) == 12);
 
     // Case 5: Consecutive newlines
     piece_table pt_newlines("A\n\nB");
-    REQUIRE(pt_newlines.get_index_for_line(1) == 0); // 'A'
-    REQUIRE(pt_newlines.get_index_for_line(2) == 2); // First \n
-    REQUIRE(pt_newlines.get_index_for_line(3) == 3); // 'B'
-    REQUIRE(pt_newlines.get_index_for_line(4) == 4); // End
+    CHECK(pt_newlines.get_index_for_line(1) == 0); // 'A'
+    CHECK(pt_newlines.get_index_for_line(2) == 2); // First \n
+    CHECK(pt_newlines.get_index_for_line(3) == 3); // 'B'
+    CHECK(pt_newlines.get_index_for_line(4) == 4); // End
 }
