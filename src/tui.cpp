@@ -15,7 +15,8 @@ tui::tui() : m_window(nullptr), m_editor(editor()), m_quit(false), m_viewport_to
 
 tui::~tui()
 {
-    endwin();
+    if (m_window)
+        endwin();
 }
 
 bool tui::init()
@@ -65,6 +66,17 @@ void tui::render()
 {
     clear();
     mvaddstr(0, 0, "Hello World");
+    render_status_bar();
+}
+
+void tui::render_status_bar()
+{
+    // TODO: Implement status bar rendering
+}
+
+void tui::render_line(size_t /*line_idx*/)
+{
+    // TODO: Implement line rendering
 }
 
 void tui::handle_input(const int ch)

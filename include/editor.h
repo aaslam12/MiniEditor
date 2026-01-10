@@ -28,6 +28,11 @@ struct cursor
         row = -1;
         col = -1;
     }
+
+    cursor()
+    {
+        reset();
+    }
 };
 
 /*
@@ -52,6 +57,13 @@ public:
     void insert_char(char c);
     void delete_char();
     void move_cursor(direction dir);
+
+    size_t get_total_lines() const;
+    size_t get_cursor_row() const;
+    size_t get_cursor_col() const;
+    bool is_dirty() const;
+    std::string get_filename() const;
+    std::string get_line(size_t line_number) const;
 
 private:
     piece_table m_piece_table;

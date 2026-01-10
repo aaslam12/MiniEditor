@@ -1,9 +1,8 @@
 #pragma once
 
-#include <fstream>
-#define PDC_FORCE_UTF8
 #include "editor.h"
 #include <curses.h>
+#include <fstream>
 
 namespace AL
 {
@@ -40,6 +39,8 @@ private:
 
     void update_values();
     void render();
+    void render_status_bar();
+    void render_line(size_t line_idx);
     void handle_input(const int ch);
 };
 

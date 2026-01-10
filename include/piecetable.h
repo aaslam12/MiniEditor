@@ -13,7 +13,6 @@ namespace AL
 class piece_table
 {
 private:
-
     std::string m_original_buffer;
     std::string m_add_buffer;
     AL::implicit_treap m_treap;
@@ -26,7 +25,6 @@ private:
 
 #if MINIEDITOR_TESTING
 public:
-
 #endif // MINIEDITOR_TESTING
     auto get_split_strategy()
     {
@@ -59,7 +57,6 @@ public:
     }
 
 public:
-
     piece_table();
     ~piece_table();
 
@@ -69,6 +66,10 @@ public:
     void clear();
     size_t get_index_for_line(size_t target_line) const;
     std::string to_string() const;
+    std::string get_line(size_t line_number) const;
     size_t length() const;
+    size_t get_line_count() const;
+    char get_char_at(size_t byte_index) const;
+    size_t get_line_length(size_t line_number) const;
 };
 } // namespace AL

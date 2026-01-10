@@ -112,9 +112,15 @@ def main():
     if build_tests:
         print("\n=== Running Tests ===")
         try:
+            # Create a copy of the environment and add color forcing variables
+            env = os.environ.copy()
+            env["CTEST_COLOR_OUTPUT"] = "ON"
+            env["CLICOLOR_FORCE"] = "1"
+            
             # ctest handles running the registered tests
             subprocess.check_call(
-                ["ctest", "--output-on-failure", "--test-dir", build_dir]
+                ["ctest", "--output-on-failure", "--test-dir", build_dir],
+                env=env
             )
         except subprocess.CalledProcessError:
             print("Tests failed.")

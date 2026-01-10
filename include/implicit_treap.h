@@ -109,28 +109,32 @@ public:
     }
 
 private:
+    node* merge(node* l, node* r);
+
+    // private helper recursive functions
     node* find(size_t index, node* current) const;
     void find_by_line(size_t line_number, node* current, node*& n, size_t& byte_offset) const;
+    void find_by_byte(size_t index, node* current, node*& n, size_t& byte_offset) const;
     void delete_nodes(node* n);
     node* copy_nodes(const node* n); // performs deep copy
     void get_pieces(node* n, std::vector<piece>& pieces) const;
 
-    // helper function that allows you traverse through all nodes in in-order
+    // helper function allows you traverse through all nodes in the subtree of the specified node in in-order
     // and run a callback function on each of them
     template<piece_callback func_callback>
-    bool for_each(node* current, func_callback&& callback) const
+    bool for_each_internal(node* current, func_callback&& callback) const
     {
         // helper recursive function
         if (!current)
             return false;
 
-        if (for_each(current->left, std::forward<func_callback>(callback)))
+        if (for_each_internal(current->left, std::forward<func_callback>(callback)))
             return true;
 
         if (callback(current->data))
             return true;
 
-        if (for_each(current->right, std::forward<func_callback>(callback)))
+        if (for_each_internal(current->right, std::forward<func_callback>(callback)))
             return true;
 
         return false;
@@ -148,20 +152,32 @@ public:
     // finds and returns the node with the containing index
     node* find(size_t index) const;
     void find_by_line(size_t line_number, node*& n, size_t& byte_offset) const;
-    node* merge(node* l, node* r);
+    void find_by_byte(size_t index, node*& n, size_t& byte_offset) const;
+
     size_t size() const;
+    size_t get_newline_count() const;
     bool empty() const;
     void clear();
     void get_pieces(std::vector<AL::piece>& pieces) const;
 
-    // public facing function that allows you traverse through all nodes in in-order
+    // allows you traverse through all nodes in in-order
     // and run a callback function on each of them
     // allows short-circuit with the return value
     // return false to keep running. true to stop.
     template<piece_callback func_callback>
     void for_each(func_callback&& callback) const
     {
-        for_each(m_root, std::forward<func_callback>(callback));
+        for_each_internal(m_root, std::forward<func_callback>(callback));
+    }
+
+    // helper function allows you traverse through all nodes in the subtree of the specified node in in-order
+    // and run a callback function on each of them
+    // allows short-circuit with the return value
+    // return false to keep running. true to stop.
+    template<piece_callback func_callback>
+    void for_each(node* n, func_callback&& callback) const
+    {
+        for_each_internal(n, std::forward<func_callback>(callback));
     }
 
     template<typename split_strategy>
