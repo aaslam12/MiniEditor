@@ -1,4 +1,7 @@
 #include "implicit_treap.h"
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace AL
 {
@@ -55,24 +58,22 @@ void implicit_treap::find_by_line(size_t line_number, node* current, node*& n, s
     if (!current)
         return;
 
-    const size_t left_newlines = get_subtree_newlines(current->left);
+    size_t lines_in_left = current->left ? current->left->subtree_newline_count + 1 : 0;
+    const size_t left_len = get_subtree_length(current->left);
 
-    if (line_number < left_newlines)
+    if (line_number <= lines_in_left)
     {
-        // entirely in left subtree
         find_by_line(line_number, current->left, n, byte_offset);
     }
-    else if (line_number <= left_newlines + 1 + current->data.newline_count)
+    else if (line_number <= lines_in_left + current->data.newline_count + 1)
     {
-        // entirely in current node
-        byte_offset += get_subtree_length(current->left);
+        byte_offset += left_len;
         n = current;
     }
     else
     {
-        // entirely in right node
-        byte_offset += get_subtree_length(current->left) + current->data.length;
-        find_by_line(line_number - 1 - left_newlines - current->data.newline_count, current->right, n, byte_offset);
+        byte_offset += left_len + current->data.length;
+        find_by_line(line_number - lines_in_left - (current->data.newline_count + 1), current->right, n, byte_offset);
     }
 }
 

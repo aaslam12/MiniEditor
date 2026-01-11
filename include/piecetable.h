@@ -58,6 +58,8 @@ public:
 
 public:
     piece_table();
+    piece_table(piece_table&& other) noexcept;
+    piece_table& operator=(piece_table&& other) noexcept;
     ~piece_table();
 
     piece_table(const std::string initial_content);

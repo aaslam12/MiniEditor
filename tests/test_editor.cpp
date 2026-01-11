@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_version_macros.hpp>
+#include <cstddef>
 #include <editor.h>
 #include <filesystem>
 #include <fstream>
@@ -62,6 +63,7 @@ TEST_CASE("Editor: File Operations", "[editor]")
         ed.open(path);
         // Modify content (stubs will be called)
         ed.insert_char('A');
+        ed.flush_insert_buffer();
         CHECK(ed.is_dirty());
         CHECK(ed.save());
         CHECK_FALSE(ed.is_dirty());
@@ -93,6 +95,7 @@ TEST_CASE("Editor: Editing Operations (Stubs)", "[editor]")
     SECTION("Insert character")
     {
         CHECK_NOTHROW(ed.insert_char('x'));
+        ed.flush_insert_buffer();
         CHECK(ed.is_dirty());
         CHECK(ed.get_line(1) == "xabc");
     }
@@ -154,7 +157,7 @@ TEST_CASE("Editor: State Getters (Stubs)", "[editor]")
 {
     AL::editor ed;
 
-    CHECK(ed.get_total_lines() == 0);
+    CHECK(ed.get_total_lines() == 1);
     CHECK(ed.get_cursor_row() == 0);
     CHECK(ed.get_cursor_col() == 0);
     CHECK_FALSE(ed.is_dirty());

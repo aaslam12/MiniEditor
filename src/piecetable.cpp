@@ -41,6 +41,26 @@ piece_table::piece_table()
 piece_table::~piece_table()
 {}
 
+piece_table::piece_table(piece_table&& other) noexcept
+{
+    m_add_buffer = std::move(other.m_add_buffer);
+    m_original_buffer = std::move(other.m_original_buffer);
+    m_treap = std::move(other.m_treap);
+}
+
+piece_table& piece_table::operator=(piece_table&& other) noexcept
+{
+    if (&other == this)
+        return *this;
+    clear();
+
+    m_add_buffer = std::move(other.m_add_buffer);
+    m_original_buffer = std::move(other.m_original_buffer);
+    m_treap = std::move(other.m_treap);
+
+    return *this;
+}
+
 piece_table::piece_table(std::string initial_content)
 {
     // normalize the content before doing anything
@@ -99,46 +119,53 @@ void piece_table::clear()
 
 size_t piece_table::get_index_for_line(size_t target_line) const
 {
-    if (target_line <= 1 || m_treap.empty())
+    if (m_treap.empty() || target_line == 0)
         return 0;
 
-    node* n;
-    size_t byte_offset;
-    m_treap.find_by_line(target_line, n, byte_offset);
+    node* n = nullptr;
+    size_t global_index_of_piece_start = 0;
+    
+    m_treap.find_by_line(target_line, n, global_index_of_piece_start);
 
     if (!n)
-        return length();
-    piece p = n->data;
-
-    if (p.newline_count == 0)
     {
-        return byte_offset;
+        return length(); 
     }
 
-    size_t lines_so_far = implicit_treap::get_subtree_newlines(n->left) + 1;
-    if (target_line == lines_so_far)
-        return byte_offset;
+    size_t lines_before_current_piece_start = implicit_treap::get_subtree_newlines(n->left);
+    size_t relative_target_line_in_piece = target_line - (lines_before_current_piece_start + 1);
 
-    const std::string& buffer = p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer;
-
-    // string_view::find for AVX instructions speed up
-    std::string_view search_window(buffer.data() + p.start, p.length);
-    size_t last_found = 0;
-
-    // pos is the index of the new line found
-    for (size_t pos = search_window.find('\n', 0); pos != std::string::npos; pos = search_window.find('\n', pos))
+    if (relative_target_line_in_piece == 0)
     {
-        // found a new line
-        lines_so_far++;
-        last_found = pos;
-
-        if (target_line == lines_so_far)
-            return byte_offset + last_found + 1;
-
-        pos++;
+        return global_index_of_piece_start;
     }
 
-    return length();
+    const std::string& buffer = (n->data.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
+    std::string_view piece_view(buffer.data() + n->data.start, n->data.length);
+
+    size_t current_newline_count_in_piece = 0;
+    size_t last_newline_pos_in_piece = 0;
+
+    for (size_t pos = 0; pos < piece_view.length(); ++pos)
+    {
+        if (piece_view[pos] == '\n')
+        {
+            current_newline_count_in_piece++;
+            last_newline_pos_in_piece = pos;
+
+            if (current_newline_count_in_piece == relative_target_line_in_piece)
+            {
+                return global_index_of_piece_start + pos + 1;
+            }
+        }
+    }
+
+    if (current_newline_count_in_piece < relative_target_line_in_piece)
+    {
+        return global_index_of_piece_start + last_newline_pos_in_piece + 1;
+    }
+    
+    return global_index_of_piece_start;
 }
 
 std::string piece_table::to_string() const
@@ -164,52 +191,56 @@ std::string piece_table::to_string() const
 
 std::string piece_table::get_line(size_t line_number) const
 {
-    if (length() <= 0 || m_treap.empty())
-        return "";
+    std::string result;
+    if (line_number == 0 || line_number > get_line_count())
+        return result;
 
-    size_t line_start = get_index_for_line(line_number);
-    if (line_start >= length())
-        return "";
+    size_t line_start_index = get_index_for_line(line_number);
+    if (line_start_index >= length())
+        return result;
 
-    node* n = nullptr;
-    size_t node_byte_offset = 0;
-    m_treap.find_by_line(line_number, n, node_byte_offset);
+    size_t current_index = 0;
+    bool started = false;
 
-    if (!n)
-        return "";
+    m_treap.for_each([&](const AL::piece& p) {
+        size_t piece_global_start_index = current_index;
+        size_t piece_global_end_index = current_index + p.length;
 
-    size_t offset_in_piece = line_start - node_byte_offset;
-
-    const std::string& buffer = n->data.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer;
-    std::string_view piece_view(buffer.data() + n->data.start, n->data.length);
-
-    size_t newline_pos = piece_view.find('\n', offset_in_piece);
-
-    if (newline_pos != std::string::npos)
-    {
-        // line is in the piece
-        return std::string(piece_view.substr(offset_in_piece, newline_pos - offset_in_piece));
-    }
-
-    // line spans outside of this piece.
-    std::string str(piece_view.substr(offset_in_piece));
-
-    m_treap.for_each(n, [&str, this](const AL::piece& p) {
-        const std::string& buffer = p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer;
-        std::string_view piece_view(buffer.data() + p.start, p.length);
-        size_t newline_pos = piece_view.find('\n', 0);
-
-        if (newline_pos != std::string::npos)
+        if (!started && line_start_index >= piece_global_start_index && line_start_index < piece_global_end_index)
         {
-            str.append(piece_view, 0, newline_pos);
-            return true;
-        }
+            started = true;
+            size_t offset_in_piece = line_start_index - piece_global_start_index;
+            const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
+            std::string_view piece_view(buffer.data() + p.start + offset_in_piece, p.length - offset_in_piece);
 
-        str.append(piece_view);
+            for (char c : piece_view)
+            {
+                if (c == '\n')
+                {
+                    return true; // Stop iteration
+                }
+                result += c;
+            }
+        }
+        else if (started)
+        {
+            const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
+            std::string_view piece_view(buffer.data() + p.start, p.length);
+
+            for (char c : piece_view)
+            {
+                if (c == '\n')
+                {
+                    return true; // Stop iteration
+                }
+                result += c;
+            }
+        }
+        current_index += p.length;
         return false;
     });
 
-    return str;
+    return result;
 }
 
 size_t piece_table::length() const
@@ -219,8 +250,15 @@ size_t piece_table::length() const
 
 size_t piece_table::get_line_count() const
 {
+    if (m_treap.empty())
+        return 0;
 
-    return m_treap.get_newline_count();
+    size_t newline_count = m_treap.get_newline_count();
+    if (newline_count == 0 && length() > 0)
+    {
+        return 1;
+    }
+    return newline_count + 1;
 }
 
 char piece_table::get_char_at(size_t byte_index) const
@@ -239,9 +277,16 @@ char piece_table::get_char_at(size_t byte_index) const
 
 size_t piece_table::get_line_length(size_t line_number) const
 {
-    if (line_number >= get_line_count() || line_number == 0)
+    if (line_number == 0 || line_number > get_line_count())
         return 0;
 
-    return get_line(line_number).length();
+    size_t line_start_index = get_index_for_line(line_number);
+    size_t next_line_start_index = get_index_for_line(line_number + 1);
+
+    if (next_line_start_index == line_start_index)
+    {
+        return length() - line_start_index;
+    }
+    return next_line_start_index - line_start_index - 1; // -1 to account for the newline character
 }
 } // namespace AL

@@ -10,10 +10,12 @@ int main()
         return 67;
     }
 
+#if !MINIEDITOR_TESTING
     while (!ui.should_quit())
     {
         ui.tick();
     }
+#endif
 
     std::cout << "Hello World!\n";
     std::cout << "Hello World!\n";

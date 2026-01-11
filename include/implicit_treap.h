@@ -62,7 +62,7 @@ struct node
         subtree_length = x + data.length;
     }
 
-    node(const piece& data) : data(data), priority(rng()), subtree_length(data.length), subtree_newline_count(0), left(nullptr), right(nullptr)
+    node(const piece& data) : data(data), priority(rng()), subtree_length(data.length), subtree_newline_count(data.newline_count), left(nullptr), right(nullptr)
     {}
 };
 
