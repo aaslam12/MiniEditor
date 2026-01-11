@@ -1,7 +1,11 @@
 #include "piecetable.h"
 #include <catch2/catch_test_macros.hpp>
+#include <editor.h>
+#include <implicit_treap.h>
+#include <piecetable.h>
 
 using piece_table = AL::piece_table;
+using implicit_treap = AL::implicit_treap;
 
 // Tests the initial state of the piece table.
 TEST_CASE("piece_table Initialization", "[piecetable]")
@@ -220,4 +224,146 @@ TEST_CASE("piece_table get_index_for_line", "[piecetable]")
     CHECK(pt_newlines.get_index_for_line(2) == 2); // First \n
     CHECK(pt_newlines.get_index_for_line(3) == 3); // 'B'
     CHECK(pt_newlines.get_index_for_line(4) == 4); // End
+}
+
+TEST_CASE("piece_table: Line operations with edge cases", "[piecetable][edge]")
+{
+    SECTION("Empty file line operations")
+    {
+        piece_table pt;
+        CHECK(pt.get_line_count() == 0);
+        CHECK(pt.get_line(0) == "");
+        CHECK(pt.get_line(1) == "");
+        CHECK(pt.get_line_length(0) == 0);
+        CHECK(pt.get_line_length(1) == 0);
+    }
+
+    SECTION("Single character file")
+    {
+        piece_table pt("a");
+        CHECK(pt.get_line_count() == 1);
+        CHECK(pt.get_line(1) == "a");
+        CHECK(pt.get_line_length(1) == 1);
+    }
+
+    SECTION("File with only newlines")
+    {
+        piece_table pt("\n\n\n");
+        CHECK(pt.get_line_count() == 3);
+        CHECK(pt.get_line(1) == "");
+        CHECK(pt.get_line(2) == "");
+        CHECK(pt.get_line(3) == "");
+    }
+
+    SECTION("File ending with newline")
+    {
+        piece_table pt("line1\nline2\n");
+        CHECK(pt.get_line_count() == 2);
+        CHECK(pt.get_line(1) == "line1");
+        CHECK(pt.get_line(2) == "line2");
+    }
+
+    SECTION("File not ending with newline")
+    {
+        piece_table pt("line1\nline2");
+        CHECK(pt.get_line_count() == 2);
+        CHECK(pt.get_line(1) == "line1");
+        CHECK(pt.get_line(2) == "line2");
+    }
+
+    SECTION("Very long line")
+    {
+        std::string long_line(10000, 'x');
+        piece_table pt(long_line);
+        CHECK(pt.get_line_count() == 1);
+        CHECK(pt.get_line(1) == long_line);
+        CHECK(pt.get_line_length(1) == 10000);
+    }
+
+    SECTION("Multiple insertions on same line")
+    {
+        piece_table pt("start");
+        pt.insert(5, " middle");
+        pt.insert(12, " end");
+        CHECK(pt.to_string() == "start middle end");
+        CHECK(pt.get_line_count() == 1);
+    }
+}
+
+TEST_CASE("piece_table: Boundary delete operations", "[piecetable][edge]")
+{
+    SECTION("Delete at exact boundaries")
+    {
+        piece_table pt("abc\ndef\nghi");
+        pt.remove(3, 1); // Delete first newline
+        CHECK(pt.to_string() == "abcdef\nghi");
+        CHECK(pt.get_line_count() == 2);
+    }
+
+    SECTION("Delete spanning multiple lines")
+    {
+        piece_table pt("line1\nline2\nline3\nline4");
+        pt.remove(6, 12); // Delete "line2\nline3\n"
+        CHECK(pt.to_string() == "line1\nline4");
+        CHECK(pt.get_line_count() == 2);
+    }
+
+    SECTION("Delete everything except one character")
+    {
+        piece_table pt("abcdefgh");
+        pt.remove(0, 7);
+        CHECK(pt.to_string() == "h");
+        CHECK(pt.length() == 1);
+    }
+
+    SECTION("Repeated deletion from end")
+    {
+        piece_table pt("12345");
+        for (int i = 0; i < 5; i++)
+        {
+            pt.remove(pt.length() - 1, 1);
+        }
+        CHECK(pt.to_string() == "");
+        CHECK(pt.length() == 0);
+    }
+}
+
+TEST_CASE("piece_table: Windows line ending normalization", "[piecetable][edge]")
+{
+    SECTION("CRLF normalization")
+    {
+        piece_table pt("line1\r\nline2\r\nline3");
+        CHECK(pt.to_string() == "line1\nline2\nline3");
+        CHECK(pt.get_line_count() == 3);
+    }
+
+    SECTION("Mixed line endings")
+    {
+        piece_table pt("line1\r\nline2\nline3\r\n");
+        CHECK(pt.to_string() == "line1\nline2\nline3\n");
+        CHECK(pt.get_line_count() == 3);
+    }
+}
+
+TEST_CASE("piece_table: get_char_at edge cases", "[piecetable][edge]")
+{
+    piece_table pt("hello");
+
+    SECTION("Valid indices")
+    {
+        CHECK(pt.get_char_at(0) == 'h');
+        CHECK(pt.get_char_at(4) == 'o');
+    }
+
+    SECTION("Out of bounds indices")
+    {
+        CHECK(pt.get_char_at(5) == '\0');
+        CHECK(pt.get_char_at(100) == '\0');
+    }
+
+    SECTION("Empty piece table")
+    {
+        piece_table pt_empty;
+        CHECK(pt_empty.get_char_at(0) == '\0');
+    }
 }

@@ -1,7 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstddef>
 #include <implicit_treap.h>
-#include <iterator>
 #include <string>
 
 using implicit_treap = AL::implicit_treap;

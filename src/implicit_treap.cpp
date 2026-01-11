@@ -1,7 +1,4 @@
 #include "implicit_treap.h"
-#include <string>
-#include <string_view>
-#include <utility>
 
 namespace AL
 {
@@ -115,6 +112,51 @@ void implicit_treap::find_by_byte(size_t index, node*& n, size_t& byte_offset) c
     byte_offset = 0;
     n = nullptr;
     find_by_byte(index, m_root, n, byte_offset);
+}
+
+void implicit_treap::find_line_position(size_t target_line, node* current, size_t newlines_before, node*& n, size_t& byte_offset,
+                                        size_t& line_in_piece) const
+{
+    if (!current)
+        return;
+
+    size_t left_newlines = current->left ? current->left->subtree_newline_count : 0;
+    size_t left_bytes = get_subtree_length(current->left);
+
+    // for target_line N (N >= 2), we need to find newline (N-1)
+    size_t newline_needed = target_line - 1;
+
+    if (newline_needed > 0 && newline_needed <= newlines_before + left_newlines && current->left)
+    {
+        find_line_position(target_line, current->left, newlines_before, n, byte_offset, line_in_piece);
+        return;
+    }
+
+    // left subtree
+    byte_offset += left_bytes;
+    newlines_before += left_newlines;
+
+    // newlines (newlines_before + 1) through (newlines_before + current->data.newline_count) are in this piece
+    if (newline_needed > 0 && newline_needed <= newlines_before + current->data.newline_count)
+    {
+        n = current;
+        line_in_piece = newline_needed - newlines_before;
+        return;
+    }
+
+    // target is in right subtree
+    byte_offset += current->data.length;
+    newlines_before += current->data.newline_count;
+
+    find_line_position(target_line, current->right, newlines_before, n, byte_offset, line_in_piece);
+}
+
+void implicit_treap::find_line_position(size_t target_line, node*& n, size_t& byte_offset, size_t& line_in_piece) const
+{
+    byte_offset = 0;
+    line_in_piece = 0;
+    n = nullptr;
+    find_line_position(target_line, m_root, 0, n, byte_offset, line_in_piece);
 }
 
 size_t implicit_treap::size() const

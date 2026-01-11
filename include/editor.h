@@ -27,7 +27,7 @@ struct cursor
     void reset()
     {
         global_index = 0;
-        row = 0;
+        row = 1;
         col = 0;
     }
 

@@ -6,7 +6,6 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
-#include <sys/ucontext.h>
 
 namespace AL
 {
@@ -236,6 +235,7 @@ void editor::handle_cursor_up()
     {
         // the start of the file
         m_cursor.col = 0;
+        m_cursor.col_internal = 0;
         m_cursor.global_index = 0;
         return;
     }
@@ -257,9 +257,16 @@ void editor::handle_cursor_up()
 void editor::handle_cursor_down()
 {
     size_t line_cnt = m_piece_table.get_line_count();
-    if (line_cnt == 0 || line_cnt == m_cursor.row + 1)
+    if (line_cnt == 0)
     {
-        m_cursor.row = line_cnt;
+        m_cursor.row = 1;
+        m_cursor.col = 0;
+        m_cursor.global_index = 0;
+        return;
+    }
+
+    if (line_cnt == m_cursor.row)
+    {
         m_cursor.col = m_piece_table.get_line_length(m_cursor.row);
         m_cursor.global_index = m_piece_table.length();
         return;
@@ -306,8 +313,11 @@ void editor::handle_cursor_right()
 
     if (m_cursor.col == m_piece_table.get_line_length(m_cursor.row))
     {
-        // move to new line or stop moving if EOF
-        handle_cursor_down();
+        // move to new line
+        m_cursor.row++;
+        m_cursor.col = 0;
+        m_cursor.col_internal = 0;
+        m_cursor.global_index++;
     }
     else
     {
@@ -324,8 +334,8 @@ void editor::flush_insert_buffer()
 
     m_piece_table.insert(m_insert_position, m_insert_buffer);
 
+    m_insert_position += m_insert_buffer.length();
     m_insert_buffer.clear();
-    m_insert_position = m_cursor.global_index;
 }
 
 size_t editor::get_total_lines() const

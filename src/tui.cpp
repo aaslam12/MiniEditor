@@ -45,10 +45,10 @@ void tui::update_values()
     getmaxyx(stdscr, max_y, max_x);
 
     // Update if changed
-    if (max_y - 1 != m_viewport_height || max_x != m_viewport_width)
+    if (static_cast<size_t>(max_y - 1) != m_viewport_height || static_cast<size_t>(max_x) != m_viewport_width)
     {
-        m_viewport_height = max_y - 1;
-        m_viewport_width = max_x;
+        m_viewport_height = static_cast<size_t>(max_y - 1);
+        m_viewport_width = static_cast<size_t>(max_x);
         // Might need to clamp viewport_top_line if file got shorter visually
     }
 }
@@ -89,28 +89,28 @@ void tui::handle_input(const int ch)
 
     switch (ch)
     {
-    case KEY_UP:
-        m_editor.move_cursor(direction::UP);
-        break;
+        case KEY_UP:
+            m_editor.move_cursor(direction::UP);
+            break;
 
-    case KEY_DOWN:
-        m_editor.move_cursor(direction::DOWN);
-        break;
+        case KEY_DOWN:
+            m_editor.move_cursor(direction::DOWN);
+            break;
 
-    case KEY_LEFT:
-        m_editor.move_cursor(direction::LEFT);
-        break;
+        case KEY_LEFT:
+            m_editor.move_cursor(direction::LEFT);
+            break;
 
-    case KEY_RIGHT:
-        m_editor.move_cursor(direction::RIGHT);
-        break;
+        case KEY_RIGHT:
+            m_editor.move_cursor(direction::RIGHT);
+            break;
 
-    default:
+        default:
 #if MINIEDITOR_DEBUG
-        if (m_log.is_open())
-            m_log << "Input read (but ignored): " << ch << "\n";
+            if (m_log.is_open())
+                m_log << "Input read (but ignored): " << ch << "\n";
 #endif
-        break;
+            break;
     }
 }
 

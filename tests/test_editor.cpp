@@ -6,6 +6,9 @@
 #include <fstream>
 #include <string>
 
+using piece_table = AL::piece_table;
+using implicit_treap = AL::implicit_treap;
+
 // Helper to create a temp file for testing
 static std::filesystem::path create_temp_file(const std::string& name, const std::string& content)
 {
@@ -158,7 +161,7 @@ TEST_CASE("Editor: State Getters (Stubs)", "[editor]")
     AL::editor ed;
 
     CHECK(ed.get_total_lines() == 1);
-    CHECK(ed.get_cursor_row() == 0);
+    CHECK(ed.get_cursor_row() == 1);
     CHECK(ed.get_cursor_col() == 0);
     CHECK_FALSE(ed.is_dirty());
     CHECK(ed.get_filename().empty());
@@ -169,6 +172,243 @@ TEST_CASE("Editor: State Getters (Stubs)", "[editor]")
     CHECK(ed.get_total_lines() == 1);
     CHECK(ed.get_filename() == "test_getters.txt");
     CHECK_FALSE(ed.is_dirty());
+
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("Editor: Cursor movement at file boundaries", "[editor][edge]")
+{
+    AL::editor ed;
+    auto path = create_temp_file("cursor_edge.txt", "line1\nline2\nline3");
+    ed.open(path);
+
+    SECTION("Up at first line moves to start")
+    {
+        ed.move_cursor(AL::direction::RIGHT);
+        ed.move_cursor(AL::direction::RIGHT);
+        ed.move_cursor(AL::direction::UP);
+        CHECK(ed.get_cursor_row() == 1);
+        CHECK(ed.get_cursor_col() == 0);
+    }
+
+    SECTION("Down at last line stays at end")
+    {
+        // Move to last line
+        ed.move_cursor(AL::direction::DOWN);
+        ed.move_cursor(AL::direction::DOWN);
+        size_t last_row = ed.get_cursor_row();
+
+        // Try to go down again
+        ed.move_cursor(AL::direction::DOWN);
+        CHECK(ed.get_cursor_row() == last_row);
+    }
+
+    SECTION("Left at start of file does nothing")
+    {
+        ed.move_cursor(AL::direction::LEFT);
+        CHECK(ed.get_cursor_row() == 1);
+        CHECK(ed.get_cursor_col() == 0);
+    }
+
+    SECTION("Right at end of file does nothing")
+    {
+        // Move to end
+        for (int i = 0; i < 100; i++)
+        {
+            ed.move_cursor(AL::direction::RIGHT);
+        }
+        size_t row = ed.get_cursor_row();
+        size_t col = ed.get_cursor_col();
+
+        ed.move_cursor(AL::direction::RIGHT);
+        CHECK(ed.get_cursor_row() == row);
+        CHECK(ed.get_cursor_col() == col);
+    }
+
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("Editor: Delete operations at boundaries", "[editor][edge]")
+{
+    AL::editor ed;
+
+    SECTION("Delete at start of file does nothing")
+    {
+        auto path = create_temp_file("delete_start.txt", "test");
+        ed.open(path);
+        ed.delete_char();
+        ed.flush_insert_buffer();
+        CHECK(ed.get_line(1) == "test");
+        std::filesystem::remove(path);
+    }
+
+    SECTION("Delete newline joins lines")
+    {
+        auto path = create_temp_file("delete_newline.txt", "line1\nline2");
+        ed.open(path);
+
+        // Move to start of line 2
+        ed.move_cursor(AL::direction::DOWN);
+        CHECK(ed.get_cursor_row() == 2);
+
+        // Delete the newline
+        ed.delete_char();
+        ed.flush_insert_buffer();
+        CHECK(ed.get_line(1) == "line1line2");
+        CHECK(ed.get_total_lines() == 1);
+
+        std::filesystem::remove(path);
+    }
+}
+
+TEST_CASE("Editor: Insert operations with newlines", "[editor][edge]")
+{
+    AL::editor ed;
+    auto path = create_temp_file("insert_newline.txt", "test");
+    ed.open(path);
+
+    SECTION("Insert newline in middle")
+    {
+        ed.move_cursor(AL::direction::RIGHT);
+        ed.move_cursor(AL::direction::RIGHT);
+        ed.insert_char('\n');
+        ed.flush_insert_buffer();
+
+        CHECK(ed.get_total_lines() == 2);
+        CHECK(ed.get_cursor_row() == 2);
+        CHECK(ed.get_cursor_col() == 0);
+    }
+
+    SECTION("Insert newline at start")
+    {
+        ed.insert_char('\n');
+        ed.flush_insert_buffer();
+
+        CHECK(ed.get_total_lines() == 2);
+        CHECK(ed.get_cursor_row() == 2);
+    }
+
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("Editor: Column memory during vertical movement", "[editor][edge]")
+{
+    AL::editor ed;
+    auto path = create_temp_file("col_memory.txt", "long line here\nshort\nlong line again");
+    ed.open(path);
+
+    // Move to column 10 on first line
+    for (int i = 0; i < 10; i++)
+    {
+        ed.move_cursor(AL::direction::RIGHT);
+    }
+    CHECK(ed.get_cursor_col() == 10);
+
+    // Move down to shorter line
+    ed.move_cursor(AL::direction::DOWN);
+    CHECK(ed.get_cursor_col() == 5); // Clamped to "short" length
+
+    // Move down again to long line - should restore column 10
+    ed.move_cursor(AL::direction::DOWN);
+    CHECK(ed.get_cursor_col() == 10);
+
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("implicit_treap: Split at exact node boundaries", "[treap][edge]")
+{
+    const auto split_func = [](AL::piece& left, size_t split_offset) {
+        AL::piece right_piece = {
+            .buf_type = left.buf_type, .start = left.start + split_offset, .length = left.length - split_offset, .newline_count = 0};
+        left.length = split_offset;
+        return right_piece;
+    };
+
+    implicit_treap treap;
+
+    // Insert pieces
+    treap.insert(0, {AL::buffer_type::ADD, 0, 5, 0}, split_func);
+    treap.insert(5, {AL::buffer_type::ADD, 5, 5, 0}, split_func);
+    treap.insert(10, {AL::buffer_type::ADD, 10, 5, 0}, split_func);
+
+    CHECK(treap.size() == 15);
+
+    SECTION("Erase at exact piece boundary")
+    {
+        treap.erase(5, 5, split_func);
+        CHECK(treap.size() == 10);
+    }
+
+    SECTION("Erase spanning multiple pieces")
+    {
+        treap.erase(3, 7, split_func);
+        CHECK(treap.size() == 8); // 3 bytes from first piece + 5 bytes from third piece
+    }
+}
+
+TEST_CASE("implicit_treap: Zero-length operations", "[treap][edge]")
+{
+    const auto split_func = [](AL::piece& left, size_t split_offset) {
+        AL::piece right_piece = {
+            .buf_type = left.buf_type, .start = left.start + split_offset, .length = left.length - split_offset, .newline_count = 0};
+        left.length = split_offset;
+        return right_piece;
+    };
+
+    implicit_treap treap;
+    treap.insert(0, {AL::buffer_type::ADD, 0, 10, 0}, split_func);
+
+    SECTION("Insert zero-length piece does nothing")
+    {
+        size_t before = treap.size();
+        treap.insert(5, {AL::buffer_type::ADD, 0, 0, 0}, split_func);
+        CHECK(treap.size() == before);
+    }
+
+    SECTION("Erase zero length does nothing")
+    {
+        size_t before = treap.size();
+        treap.erase(5, 0, split_func);
+        CHECK(treap.size() == before);
+    }
+}
+
+TEST_CASE("Editor: Empty file operations", "[editor][edge]")
+{
+    AL::editor ed;
+    auto path = create_temp_file("empty_file.txt", "");
+    ed.open(path);
+
+    SECTION("Empty file has one line")
+    {
+        CHECK(ed.get_total_lines() == 1);
+        CHECK(ed.get_line(1) == "");
+    }
+
+    SECTION("Cursor operations on empty file")
+    {
+        CHECK(ed.get_cursor_row() == 1);
+        CHECK(ed.get_cursor_col() == 0);
+
+        ed.move_cursor(AL::direction::UP);
+        CHECK(ed.get_cursor_row() == 1);
+
+        ed.move_cursor(AL::direction::DOWN);
+        CHECK(ed.get_cursor_row() == 1);
+
+        ed.move_cursor(AL::direction::LEFT);
+        CHECK(ed.get_cursor_col() == 0);
+
+        ed.move_cursor(AL::direction::RIGHT);
+        CHECK(ed.get_cursor_col() == 0);
+    }
+
+    SECTION("Insert into empty file")
+    {
+        ed.insert_char('a');
+        ed.flush_insert_buffer();
+        CHECK(ed.get_line(1) == "a");
+    }
 
     std::filesystem::remove(path);
 }

@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include <sys/resource.h>
-#include <vector>
 
 double get_memory_usage()
 {

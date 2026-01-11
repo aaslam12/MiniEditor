@@ -62,7 +62,8 @@ struct node
         subtree_length = x + data.length;
     }
 
-    node(const piece& data) : data(data), priority(rng()), subtree_length(data.length), subtree_newline_count(data.newline_count), left(nullptr), right(nullptr)
+    node(const piece& data)
+        : data(data), priority(rng()), subtree_length(data.length), subtree_newline_count(data.newline_count), left(nullptr), right(nullptr)
     {}
 };
 
@@ -115,6 +116,7 @@ private:
     node* find(size_t index, node* current) const;
     void find_by_line(size_t line_number, node* current, node*& n, size_t& byte_offset) const;
     void find_by_byte(size_t index, node* current, node*& n, size_t& byte_offset) const;
+    void find_line_position(size_t target_line, node* current, size_t lines_before, node*& n, size_t& byte_offset, size_t& line_in_piece) const;
     void delete_nodes(node* n);
     node* copy_nodes(const node* n); // performs deep copy
     void get_pieces(node* n, std::vector<piece>& pieces) const;
@@ -153,6 +155,10 @@ public:
     node* find(size_t index) const;
     void find_by_line(size_t line_number, node*& n, size_t& byte_offset) const;
     void find_by_byte(size_t index, node*& n, size_t& byte_offset) const;
+
+    // find which node contains the start of target_line and return the line number relative to that piece
+    // returns byte_offset to start of piece, and line_in_piece (1-indexed within piece)
+    void find_line_position(size_t target_line, node*& n, size_t& byte_offset, size_t& line_in_piece) const;
 
     size_t size() const;
     size_t get_newline_count() const;
@@ -234,7 +240,7 @@ public:
             node* new_node = new node(right_piece);
 
             // The current node is truncated to become the left part
-            current->data.length = split_offset;
+            // Note: callback already updated current->data.newline_count and right_piece.newline_count
 
             // The new_node is inserted to the right of current
             new_node->right = current->right;

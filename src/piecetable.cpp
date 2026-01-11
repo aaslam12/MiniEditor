@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
-#include <strings.h>
 
 namespace AL
 {
@@ -119,53 +118,46 @@ void piece_table::clear()
 
 size_t piece_table::get_index_for_line(size_t target_line) const
 {
-    if (m_treap.empty() || target_line == 0)
+    if (target_line == 0 || m_treap.empty())
         return 0;
 
+    const size_t total_lines = get_line_count();
+    if (target_line > total_lines)
+        return length();
+    if (target_line == 1)
+        return 0;
+
+    // Use treap's O(log n) find_line_position to locate the node and position
     node* n = nullptr;
-    size_t global_index_of_piece_start = 0;
-    
-    m_treap.find_by_line(target_line, n, global_index_of_piece_start);
+    size_t byte_offset = 0;
+    size_t line_in_piece = 0;
+    m_treap.find_line_position(target_line, n, byte_offset, line_in_piece);
 
     if (!n)
-    {
-        return length(); 
-    }
+        return length();
 
-    size_t lines_before_current_piece_start = implicit_treap::get_subtree_newlines(n->left);
-    size_t relative_target_line_in_piece = target_line - (lines_before_current_piece_start + 1);
-
-    if (relative_target_line_in_piece == 0)
-    {
-        return global_index_of_piece_start;
-    }
+    // line_in_piece tells us this is the Nth line that starts in this piece
+    // Line 1 in piece starts after 1st newline, line 2 after 2nd, etc.
+    size_t newlines_to_skip = line_in_piece;
 
     const std::string& buffer = (n->data.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
     std::string_view piece_view(buffer.data() + n->data.start, n->data.length);
 
-    size_t current_newline_count_in_piece = 0;
-    size_t last_newline_pos_in_piece = 0;
-
-    for (size_t pos = 0; pos < piece_view.length(); ++pos)
+    size_t newlines_found = 0;
+    for (size_t i = 0; i < piece_view.length(); ++i)
     {
-        if (piece_view[pos] == '\n')
+        if (piece_view[i] == '\n')
         {
-            current_newline_count_in_piece++;
-            last_newline_pos_in_piece = pos;
-
-            if (current_newline_count_in_piece == relative_target_line_in_piece)
+            newlines_found++;
+            if (newlines_found == newlines_to_skip)
             {
-                return global_index_of_piece_start + pos + 1;
+                return byte_offset + i + 1;
             }
         }
     }
 
-    if (current_newline_count_in_piece < relative_target_line_in_piece)
-    {
-        return global_index_of_piece_start + last_newline_pos_in_piece + 1;
-    }
-    
-    return global_index_of_piece_start;
+    // Should not reach here if tree is consistent
+    return byte_offset + n->data.length;
 }
 
 std::string piece_table::to_string() const
@@ -196,8 +188,10 @@ std::string piece_table::get_line(size_t line_number) const
         return result;
 
     size_t line_start_index = get_index_for_line(line_number);
-    if (line_start_index >= length())
+    if (line_start_index >= length() && length() > 0)
+    {
         return result;
+    }
 
     size_t current_index = 0;
     bool started = false;
@@ -210,16 +204,19 @@ std::string piece_table::get_line(size_t line_number) const
         {
             started = true;
             size_t offset_in_piece = line_start_index - piece_global_start_index;
+
             const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
             std::string_view piece_view(buffer.data() + p.start + offset_in_piece, p.length - offset_in_piece);
 
-            for (char c : piece_view)
+            size_t newline_pos = piece_view.find('\n');
+            if (newline_pos != std::string_view::npos)
             {
-                if (c == '\n')
-                {
-                    return true; // Stop iteration
-                }
-                result += c;
+                result.append(piece_view.substr(0, newline_pos));
+                return true;
+            }
+            else
+            {
+                result.append(piece_view);
             }
         }
         else if (started)
@@ -227,13 +224,15 @@ std::string piece_table::get_line(size_t line_number) const
             const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
             std::string_view piece_view(buffer.data() + p.start, p.length);
 
-            for (char c : piece_view)
+            size_t newline_pos = piece_view.find('\n');
+            if (newline_pos != std::string_view::npos)
             {
-                if (c == '\n')
-                {
-                    return true; // Stop iteration
-                }
-                result += c;
+                result.append(piece_view.substr(0, newline_pos));
+                return true;
+            }
+            else
+            {
+                result.append(piece_view);
             }
         }
         current_index += p.length;
@@ -253,12 +252,15 @@ size_t piece_table::get_line_count() const
     if (m_treap.empty())
         return 0;
 
-    size_t newline_count = m_treap.get_newline_count();
-    if (newline_count == 0 && length() > 0)
-    {
+    const size_t newline_count = m_treap.get_newline_count();
+    if (length() == 0)
+        return 0;
+
+    if (newline_count == 0)
         return 1;
-    }
-    return newline_count + 1;
+
+    const bool ends_with_newline = get_char_at(length() - 1) == '\n';
+    return ends_with_newline ? newline_count : newline_count + 1;
 }
 
 char piece_table::get_char_at(size_t byte_index) const
@@ -280,13 +282,15 @@ size_t piece_table::get_line_length(size_t line_number) const
     if (line_number == 0 || line_number > get_line_count())
         return 0;
 
-    size_t line_start_index = get_index_for_line(line_number);
-    size_t next_line_start_index = get_index_for_line(line_number + 1);
+    const size_t line_start_index = get_index_for_line(line_number);
+    const size_t next_line_start_index = (line_number < get_line_count()) ? get_index_for_line(line_number + 1) : length();
 
-    if (next_line_start_index == line_start_index)
+    size_t end_index = next_line_start_index;
+    if (end_index > line_start_index && end_index <= length() && get_char_at(end_index - 1) == '\n')
     {
-        return length() - line_start_index;
+        end_index -= 1;
     }
-    return next_line_start_index - line_start_index - 1; // -1 to account for the newline character
+
+    return end_index > line_start_index ? end_index - line_start_index : 0;
 }
 } // namespace AL
