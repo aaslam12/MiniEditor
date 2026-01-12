@@ -17,6 +17,10 @@ private:
     std::string m_add_buffer;
     AL::implicit_treap m_treap;
 
+    // file reconstruction cache for to_string()
+    mutable std::string m_cached_string;
+    mutable bool m_needs_rebuild;
+
     // normalizes string IN PLACE
     // replaces OS specific line endings with '\n'
     void normalize(std::string& text);

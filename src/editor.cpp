@@ -69,8 +69,8 @@ bool editor::open(const std::filesystem::path& path)
     m_dirty = false;
 
     m_piece_table = piece_table(str);
-    m_cursor.col = 0;
-    m_cursor.col_internal = 0;
+    m_cursor.col = 1;
+    m_cursor.col_internal = 1;
     m_cursor.row = 1;
     m_cursor.global_index = 0;
     return true;
@@ -78,6 +78,7 @@ bool editor::open(const std::filesystem::path& path)
 
 bool editor::save()
 {
+    flush_insert_buffer();
     return save(m_current_file_path);
 }
 
@@ -171,7 +172,7 @@ void editor::insert_char(char c)
     {
         flush_insert_buffer();
         m_cursor.row++;
-        m_cursor.col = 0;
+        m_cursor.col = 1;
         m_cursor.global_index++;
         return;
     }
@@ -187,6 +188,8 @@ void editor::insert_char(char c)
 
 void editor::delete_char()
 {
+    flush_insert_buffer();
+
     m_dirty = true;
     if (m_cursor.global_index == 0)
         return;
@@ -196,7 +199,7 @@ void editor::delete_char()
         m_piece_table.remove(m_cursor.global_index - 1, 1);
         m_cursor.global_index--;
         m_cursor.row--;
-        m_cursor.col = m_piece_table.get_line_length(m_cursor.row);
+        m_cursor.col = m_piece_table.get_line_length(m_cursor.row) + 1;
     }
     else
     {
@@ -234,24 +237,25 @@ void editor::handle_cursor_up()
     if (m_cursor.row == 1)
     {
         // the start of the file
-        m_cursor.col = 0;
-        m_cursor.col_internal = 0;
+        m_cursor.col = 1;
+        m_cursor.col_internal = 1;
         m_cursor.global_index = 0;
         return;
     }
 
     m_cursor.row--;
 
-    if (size_t line_len = m_piece_table.get_line_length(m_cursor.row); line_len <= m_cursor.col)
+    size_t line_len = m_piece_table.get_line_length(m_cursor.row);
+    if (m_cursor.col_internal > line_len + 1)
     {
-        m_cursor.col = line_len;
+        m_cursor.col = line_len + 1;
     }
     else
     {
         m_cursor.col = m_cursor.col_internal;
     }
 
-    m_cursor.global_index = m_piece_table.get_index_for_line(m_cursor.row) + m_cursor.col;
+    m_cursor.global_index = m_piece_table.get_index_for_line(m_cursor.row) + m_cursor.col - 1;
 }
 
 void editor::handle_cursor_down()
@@ -260,30 +264,36 @@ void editor::handle_cursor_down()
     if (line_cnt == 0)
     {
         m_cursor.row = 1;
-        m_cursor.col = 0;
+        m_cursor.col = 1;
         m_cursor.global_index = 0;
         return;
     }
 
     if (line_cnt == m_cursor.row)
     {
-        m_cursor.col = m_piece_table.get_line_length(m_cursor.row);
-        m_cursor.global_index = m_piece_table.length();
+        size_t line_len = m_piece_table.get_line_length(m_cursor.row);
+        if (m_cursor.col > line_len + 1)
+        {
+            m_cursor.col = line_len + 1;
+            m_cursor.col_internal = line_len + 1;
+        }
+        m_cursor.global_index = m_piece_table.get_index_for_line(m_cursor.row) + m_cursor.col - 1;
         return;
     }
 
     m_cursor.row++;
 
-    if (size_t line_len = m_piece_table.get_line_length(m_cursor.row); line_len <= m_cursor.col)
+    size_t line_len = m_piece_table.get_line_length(m_cursor.row);
+    if (m_cursor.col_internal > line_len + 1)
     {
-        m_cursor.col = line_len;
+        m_cursor.col = line_len + 1;
     }
     else
     {
         m_cursor.col = m_cursor.col_internal;
     }
 
-    m_cursor.global_index = m_piece_table.get_index_for_line(m_cursor.row) + m_cursor.col;
+    m_cursor.global_index = m_piece_table.get_index_for_line(m_cursor.row) + m_cursor.col - 1;
 }
 
 void editor::handle_cursor_left()
@@ -291,11 +301,11 @@ void editor::handle_cursor_left()
     if (m_cursor.global_index == 0)
         return;
 
-    if (m_cursor.col == 0)
+    if (m_cursor.col == 1)
     {
         // move to last line
         m_cursor.row--;
-        m_cursor.col = m_piece_table.get_line_length(m_cursor.row);
+        m_cursor.col = m_piece_table.get_line_length(m_cursor.row) + 1;
         m_cursor.col_internal = m_cursor.col;
     }
     else
@@ -308,16 +318,20 @@ void editor::handle_cursor_left()
 
 void editor::handle_cursor_right()
 {
-    if (m_cursor.global_index == m_piece_table.length())
+    if (m_cursor.global_index >= m_piece_table.length())
         return;
 
-    if (m_cursor.col == m_piece_table.get_line_length(m_cursor.row))
+    size_t line_len = m_piece_table.get_line_length(m_cursor.row);
+    if (m_cursor.col > line_len)
     {
-        // move to new line
-        m_cursor.row++;
-        m_cursor.col = 0;
-        m_cursor.col_internal = 0;
-        m_cursor.global_index++;
+        // at end of line, move to next line if available
+        if (m_cursor.row < m_piece_table.get_line_count())
+        {
+            m_cursor.row++;
+            m_cursor.col = 1;
+            m_cursor.col_internal = 1;
+            m_cursor.global_index++;
+        }
     }
     else
     {
@@ -362,6 +376,19 @@ bool editor::is_dirty() const
 std::string editor::get_filename() const
 {
     return m_current_file_path.filename().string();
+}
+
+const std::string& editor::get_insert_buffer() const
+{
+    return m_insert_buffer;
+}
+
+size_t editor::get_insert_buffer_start_col() const
+{
+    if (m_insert_buffer.empty())
+        return 0;
+
+    return m_cursor.col - m_insert_buffer.length();
 }
 
 } // namespace AL

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor.h"
+#include <cstddef>
 #include <curses.h>
 #include <fstream>
 
@@ -20,7 +21,7 @@ public:
     ~tui();
 
     // returns true if the tui initialized properly
-    bool init();
+    bool init(const std::string& file_path = "");
     void tick();
     bool should_quit() const;
 
@@ -36,12 +37,17 @@ private:
     size_t m_viewport_top_line;
     size_t m_viewport_height;
     size_t m_viewport_width;
+    
+    std::string m_status_message;
+    bool m_show_status_message;
 
     void update_values();
     void render();
-    void render_status_bar();
-    void render_line(size_t line_idx);
+    void render_status_bar(size_t col_offset);
+    void render_line(size_t line_idx, size_t col_offset);
     void handle_input(const int ch);
+    void clear_status_message();
+    void set_status_message(const std::string& msg);
 };
 
 } // namespace AL

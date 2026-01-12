@@ -20,7 +20,7 @@ struct cursor
     size_t global_index;
 
     size_t row;          // 1-indexed
-    size_t col;          // 0-indexed
+    size_t col;          // 1-indexed
     size_t col_internal; // for when you move your cursor up or down and the line doesnt have enough characters so you have to clamp it. we save this
                          // as the old cursor column
 
@@ -28,7 +28,7 @@ struct cursor
     {
         global_index = 0;
         row = 1;
-        col = 0;
+        col = 1;
     }
 
     cursor()
@@ -69,11 +69,13 @@ public:
     void move_cursor(direction dir);
 
     size_t get_total_lines() const;
-    size_t get_cursor_row() const;
-    size_t get_cursor_col() const;
+    size_t get_cursor_row() const; // 1-indexed
+    size_t get_cursor_col() const; // 1-indexed
     bool is_dirty() const;
     std::string get_filename() const;
-    std::string get_line(size_t line_number) const;
+    std::string get_line(size_t line_number) const; // refers to the 1-indexed line number
+    const std::string& get_insert_buffer() const;
+    size_t get_insert_buffer_start_col() const; // returns the column where insert buffer starts (1-indexed), or 0 if buffer is empty
 
 private:
     piece_table m_piece_table;

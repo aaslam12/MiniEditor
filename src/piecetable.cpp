@@ -34,7 +34,7 @@ size_t piece_table::count_newlines(const std::string& str) const
     return std::count(str.begin(), str.end(), '\n');
 }
 
-piece_table::piece_table()
+piece_table::piece_table() : m_needs_rebuild(true)
 {}
 
 piece_table::~piece_table()
@@ -45,6 +45,8 @@ piece_table::piece_table(piece_table&& other) noexcept
     m_add_buffer = std::move(other.m_add_buffer);
     m_original_buffer = std::move(other.m_original_buffer);
     m_treap = std::move(other.m_treap);
+    m_cached_string = std::move(other.m_cached_string);
+    m_needs_rebuild = other.m_needs_rebuild;
 }
 
 piece_table& piece_table::operator=(piece_table&& other) noexcept
@@ -56,11 +58,13 @@ piece_table& piece_table::operator=(piece_table&& other) noexcept
     m_add_buffer = std::move(other.m_add_buffer);
     m_original_buffer = std::move(other.m_original_buffer);
     m_treap = std::move(other.m_treap);
+    m_cached_string = std::move(other.m_cached_string);
+    m_needs_rebuild = other.m_needs_rebuild;
 
     return *this;
 }
 
-piece_table::piece_table(std::string initial_content)
+piece_table::piece_table(std::string initial_content) : m_needs_rebuild(true)
 {
     // normalize the content before doing anything
     normalize(initial_content);
@@ -94,6 +98,8 @@ void piece_table::insert(size_t file_insert_position, std::string text)
     m_treap.insert(file_insert_position,
                    {.buf_type = AL::buffer_type::ADD, .start = start_pos, .length = text_length, .newline_count = count_newlines(text)},
                    get_split_strategy());
+
+    m_needs_rebuild = true;
 }
 
 void piece_table::remove(size_t position, size_t length)
@@ -107,6 +113,7 @@ void piece_table::remove(size_t position, size_t length)
     }
 
     m_treap.erase(position, length, get_split_strategy());
+    m_needs_rebuild = true;
 }
 
 void piece_table::clear()
@@ -114,6 +121,7 @@ void piece_table::clear()
     m_original_buffer.clear();
     m_add_buffer.clear();
     m_treap.clear();
+    m_needs_rebuild = true;
 }
 
 size_t piece_table::get_index_for_line(size_t target_line) const
@@ -127,7 +135,6 @@ size_t piece_table::get_index_for_line(size_t target_line) const
     if (target_line == 1)
         return 0;
 
-    // Use treap's O(log n) find_line_position to locate the node and position
     node* n = nullptr;
     size_t byte_offset = 0;
     size_t line_in_piece = 0;
@@ -156,29 +163,33 @@ size_t piece_table::get_index_for_line(size_t target_line) const
         }
     }
 
-    // Should not reach here if tree is consistent
+    // should not reach here if tree is consistent
     return byte_offset + n->data.length;
 }
 
 std::string piece_table::to_string() const
 {
-    std::string result;
-    result.reserve(m_treap.size());
+    if (!m_needs_rebuild)
+        return m_cached_string;
 
-    m_treap.for_each([&result, this](const AL::piece& p) {
+    m_cached_string.clear();
+    m_cached_string.reserve(m_treap.size());
+
+    m_treap.for_each([this](const AL::piece& p) {
         if (p.buf_type == AL::buffer_type::ORIGINAL)
         {
-            result.append(m_original_buffer, p.start, p.length);
+            m_cached_string.append(m_original_buffer, p.start, p.length);
         }
         else
         {
-            result.append(m_add_buffer, p.start, p.length);
+            m_cached_string.append(m_add_buffer, p.start, p.length);
         }
 
         return false;
     });
 
-    return result;
+    m_needs_rebuild = false;
+    return m_cached_string;
 }
 
 std::string piece_table::get_line(size_t line_number) const

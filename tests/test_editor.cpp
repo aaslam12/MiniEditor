@@ -149,9 +149,9 @@ TEST_CASE("Editor: Cursor Movement (Stubs)", "[editor]")
         // Move to start
         for (int i = 0; i < 10; ++i)
             ed.move_cursor(AL::direction::LEFT);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
         CHECK_NOTHROW(ed.move_cursor(AL::direction::LEFT));
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
     }
     std::filesystem::remove(path);
 }
@@ -162,7 +162,7 @@ TEST_CASE("Editor: State Getters (Stubs)", "[editor]")
 
     CHECK(ed.get_total_lines() == 1);
     CHECK(ed.get_cursor_row() == 1);
-    CHECK(ed.get_cursor_col() == 0);
+    CHECK(ed.get_cursor_col() == 1);
     CHECK_FALSE(ed.is_dirty());
     CHECK(ed.get_filename().empty());
 
@@ -188,7 +188,7 @@ TEST_CASE("Editor: Cursor movement at file boundaries", "[editor][edge]")
         ed.move_cursor(AL::direction::RIGHT);
         ed.move_cursor(AL::direction::UP);
         CHECK(ed.get_cursor_row() == 1);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
     }
 
     SECTION("Down at last line stays at end")
@@ -207,7 +207,7 @@ TEST_CASE("Editor: Cursor movement at file boundaries", "[editor][edge]")
     {
         ed.move_cursor(AL::direction::LEFT);
         CHECK(ed.get_cursor_row() == 1);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
     }
 
     SECTION("Right at end of file does nothing")
@@ -276,7 +276,7 @@ TEST_CASE("Editor: Insert operations with newlines", "[editor][edge]")
 
         CHECK(ed.get_total_lines() == 2);
         CHECK(ed.get_cursor_row() == 2);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
     }
 
     SECTION("Insert newline at start")
@@ -302,15 +302,15 @@ TEST_CASE("Editor: Column memory during vertical movement", "[editor][edge]")
     {
         ed.move_cursor(AL::direction::RIGHT);
     }
-    CHECK(ed.get_cursor_col() == 10);
+    CHECK(ed.get_cursor_col() == 11); // Started at 1, moved right 10 times
 
     // Move down to shorter line
     ed.move_cursor(AL::direction::DOWN);
-    CHECK(ed.get_cursor_col() == 5); // Clamped to "short" length
+    CHECK(ed.get_cursor_col() == 6); // Clamped to "short" length (5) + 1
 
-    // Move down again to long line - should restore column 10
+    // Move down again to long line - should restore column 11
     ed.move_cursor(AL::direction::DOWN);
-    CHECK(ed.get_cursor_col() == 10);
+    CHECK(ed.get_cursor_col() == 11);
 
     std::filesystem::remove(path);
 }
@@ -388,7 +388,7 @@ TEST_CASE("Editor: Empty file operations", "[editor][edge]")
     SECTION("Cursor operations on empty file")
     {
         CHECK(ed.get_cursor_row() == 1);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
 
         ed.move_cursor(AL::direction::UP);
         CHECK(ed.get_cursor_row() == 1);
@@ -397,10 +397,10 @@ TEST_CASE("Editor: Empty file operations", "[editor][edge]")
         CHECK(ed.get_cursor_row() == 1);
 
         ed.move_cursor(AL::direction::LEFT);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
 
         ed.move_cursor(AL::direction::RIGHT);
-        CHECK(ed.get_cursor_col() == 0);
+        CHECK(ed.get_cursor_col() == 1);
     }
 
     SECTION("Insert into empty file")
