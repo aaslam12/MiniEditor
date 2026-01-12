@@ -33,6 +33,9 @@ def main():
     parser.add_argument(
         "--stress-test", action="store_true", help="Build and run stress tests"
     )
+    parser.add_argument(
+        "--static", action="store_true", help="Link libraries statically"
+    )
 
     args = parser.parse_args()
 
@@ -69,6 +72,7 @@ def main():
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         f"-DMINIEDITOR_BUILD_TESTS={'ON' if build_tests else 'OFF'}",
         f"-DMINIEDITOR_BUILD_STRESS_TESTS={'ON' if args.stress_test else 'OFF'}",
+        f"-DMINIEDITOR_STATIC_LINKING={'ON' if args.static else 'OFF'}",
     ]
 
     # Generator selection: Prefer Ninja if available, else let CMake decide
