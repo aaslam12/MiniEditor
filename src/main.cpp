@@ -5,13 +5,12 @@
 int main(int argc, char* argv[])
 {
     std::string file_path;
-    
-    // Parse command-line arguments
+
     if (argc > 1)
     {
         file_path = argv[1];
     }
-    
+
     AL::tui ui;
     if (!ui.init(file_path))
     {
