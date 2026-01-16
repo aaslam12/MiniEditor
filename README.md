@@ -72,7 +72,7 @@ python build.py
 | **Backspace** | Remove character before cursor |
 | **Enter** | Insert a new line |
 | **`]`** | Save the current file |
-| **Ctrl+C** | Quit the editor |
+| **`[`** | Quit the editor |
 | **Typing** | Insert characters at cursor position (ASCII 32-126) |
 
 ### Status Bar Information
