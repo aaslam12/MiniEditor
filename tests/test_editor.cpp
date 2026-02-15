@@ -48,7 +48,8 @@ TEST_CASE("Editor: File Operations", "[editor]")
 
     SECTION("Open a non-existent file")
     {
-        CHECK_FALSE(ed.open("non/existent/file.txt"));
+        CHECK(ed.open("non/existent/file.txt"));
+        CHECK(ed.is_dirty());
     }
 
     SECTION("Open an empty file")
@@ -70,7 +71,7 @@ TEST_CASE("Editor: File Operations", "[editor]")
         CHECK(ed.is_dirty());
         CHECK(ed.save());
         CHECK_FALSE(ed.is_dirty());
-        CHECK(read_file_content(path) == "Asome content");
+        CHECK(read_file_content(path) == "Asome content\n");
         std::filesystem::remove(path);
     }
 
@@ -82,7 +83,7 @@ TEST_CASE("Editor: File Operations", "[editor]")
         CHECK(ed.save(new_path));
         REQUIRE(std::filesystem::exists(new_path));
         CHECK(ed.get_filename() == "test_save_as_new.txt");
-        CHECK(read_file_content(new_path) == "original");
+        CHECK(read_file_content(new_path) == "original\n");
         std::filesystem::remove(path);
 
         std::filesystem::remove(new_path);

@@ -70,6 +70,10 @@ piece_table::piece_table(std::string initial_content) : m_needs_rebuild(true)
     normalize(initial_content);
     m_original_buffer = std::move(initial_content);
 
+    // dont insert a zero length piece  it breaks treap operations
+    if (m_original_buffer.empty())
+        return;
+
     AL::piece piece;
     piece.length = m_original_buffer.length();
     piece.buf_type = AL::buffer_type::ORIGINAL;

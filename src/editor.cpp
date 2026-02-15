@@ -29,6 +29,22 @@ bool editor::open(const std::filesystem::path& path)
         return false;
 
     std::error_code ec;
+    bool file_exists = std::filesystem::exists(path, ec);
+
+    // create new empty document
+    if (!file_exists && !ec)
+    {
+        m_current_file_path = path;
+        m_dirty = true;
+        m_piece_table = piece_table();
+        m_cursor.col = 1;
+        m_cursor.col_internal = 1;
+        m_cursor.row = 1;
+        m_cursor.global_index = 0;
+        return true;
+    }
+
+    // file exists
     const auto size = std::filesystem::file_size(path, ec);
     const bool size_known = !ec;
 
@@ -111,6 +127,13 @@ bool editor::save(const std::filesystem::path& path)
 
     // temp file opened for saving
     std::string str = m_piece_table.to_string();
+
+    // ensure file ends with newline
+    if (!str.empty() && str.back() != '\n')
+    {
+        str.push_back('\n');
+    }
+
     ofs.write(str.c_str(), str.length());
     ofs.close();
 
