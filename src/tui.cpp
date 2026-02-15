@@ -11,7 +11,7 @@ namespace AL
 {
 
 tui::tui()
-    : m_window(nullptr), m_editor(editor()), m_quit(false), m_viewport_top_line(0), m_viewport_height(0), m_viewport_width(0),
+    : m_window(nullptr), m_editor(editor()), m_quit(false), m_viewport_top_line(0), m_viewport_height(0), m_viewport_width(0), m_viewport_left_col(0),
       m_show_status_message(false)
 {
 #if MINIEDITOR_DEBUG
@@ -75,23 +75,41 @@ void tui::tick()
 
 void tui::render()
 {
-    clear();
+    curs_set(0);
+
+    erase();
 
     if (m_viewport_height < 20 || m_viewport_width < 20)
+    {
+        curs_set(2);
         return; // dont render anything if terminal too small
+    }
 
+    // vertical scrolling
     if (m_viewport_top_line > m_editor.get_cursor_row())
     {
-        // cursor above viewport. have to move up
         m_viewport_top_line = m_editor.get_cursor_row();
     }
     else if ((m_viewport_top_line + m_viewport_height - 2) < m_editor.get_cursor_row())
     {
-        // cursor below viewport. have to move down
         m_viewport_top_line = m_editor.get_cursor_row() - (m_viewport_height - 2);
     }
 
     size_t line_number_width = std::to_string(m_editor.get_total_lines()).length();
+    size_t gutter_width = line_number_width + 4; // "NN | "
+
+    // horizontal scrolling: ensure cursor column is visible
+    size_t content_area_width = m_viewport_width > gutter_width ? m_viewport_width - gutter_width : 1;
+    size_t cursor_col_0 = m_editor.get_cursor_col() - 1; // convert to 0-indexed
+
+    if (cursor_col_0 < m_viewport_left_col)
+    {
+        m_viewport_left_col = cursor_col_0;
+    }
+    else if (cursor_col_0 >= m_viewport_left_col + content_area_width)
+    {
+        m_viewport_left_col = cursor_col_0 - content_area_width + 1;
+    }
 
     for (size_t screen_row = 0; screen_row < m_viewport_height - 1; screen_row++)
     {
@@ -100,18 +118,19 @@ void tui::render()
 
     render_status_bar(m_viewport_height - 1);
 
+    // position the cursor
     if (m_editor.get_cursor_row() >= m_viewport_top_line && m_editor.get_cursor_row() < m_viewport_top_line + m_viewport_height - 1)
     {
-        size_t line_num_width = std::to_string(m_editor.get_total_lines()).length();
         int screen_row = m_editor.get_cursor_row() - m_viewport_top_line;
-        int screen_col = line_num_width + 3 + m_editor.get_cursor_col();
+        int screen_col = static_cast<int>(gutter_width + cursor_col_0 - m_viewport_left_col);
 
-        // clamp cursor to viewport width
         if (screen_col >= static_cast<int>(m_viewport_width))
             screen_col = static_cast<int>(m_viewport_width) - 1;
 
         move(screen_row, screen_col);
     }
+
+    curs_set(2);
 }
 
 void tui::render_status_bar(size_t status_bar_row)
@@ -151,35 +170,41 @@ void tui::render_line(size_t screen_row, size_t col_offset)
 
     auto content = m_editor.get_line(line_num);
 
-    std::stringstream ss;
-
-    ss << std::setw(col_offset) << std::right << line_num << " | ";
-
-    // if this is the cursor line and there's an insert buffer, insert it at the correct position
+    // if this is the cursor line and there's an insert buffer, splice it in
     if (line_num == m_editor.get_cursor_row() && !m_editor.get_insert_buffer().empty())
     {
         size_t insert_start_col = m_editor.get_insert_buffer_start_col();
-        // insert_start_col is 1-indexed, convert to 0-indexed for string position
         size_t insert_pos = (insert_start_col > 0) ? insert_start_col - 1 : 0;
 
-        // insert buffer at the correct position in the line
         if (insert_pos <= content.length())
         {
-            ss << content.substr(0, insert_pos);
-            ss << m_editor.get_insert_buffer();
-            ss << content.substr(insert_pos);
+            content = content.substr(0, insert_pos) + m_editor.get_insert_buffer() + content.substr(insert_pos);
         }
         else
         {
-            ss << content << m_editor.get_insert_buffer();
+            content += m_editor.get_insert_buffer();
         }
     }
-    else
+
+    // build the gutter (line number + separator)
+    std::stringstream ss;
+    ss << std::setw(col_offset) << std::right << line_num << " | ";
+    std::string gutter = ss.str();
+    size_t gutter_width = gutter.length();
+
+    // apply horizontal scroll and truncate content to fit viewport
+    size_t content_area_width = m_viewport_width > gutter_width ? m_viewport_width - gutter_width : 0;
+
+    std::string visible_content;
+    if (m_viewport_left_col < content.length())
     {
-        ss << content;
+        visible_content = content.substr(m_viewport_left_col, content_area_width);
     }
 
-    mvaddstr(static_cast<int>(screen_row), 0, ss.str().c_str());
+    // move to the screen row and write gutter + visible content
+    mvaddstr(static_cast<int>(screen_row), 0, gutter.c_str());
+    // write content separately so we can control exactly what appears
+    mvaddnstr(static_cast<int>(screen_row), static_cast<int>(gutter_width), visible_content.c_str(), static_cast<int>(content_area_width));
 }
 
 void tui::handle_input(const int ch)

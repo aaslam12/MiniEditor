@@ -14,7 +14,7 @@ MiniEditor is a high-performance, cross-platform, terminal-based text editor bui
 *   **High Performance:** Optimized O(log n) operations using an Implicit Treap-backed Piece Table
 *   **Large File Support:** Efficiently handle files of any size without memory bloat
 *   **Responsive Editing:** Batched insertions (up to 512 bytes) with real-time display during batching
-*   **Intuitive Navigation:** Full cursor support with 1-indexed positioning for consistent line/column reporting
+*   **Intuitive Navigation:** Full cursor support with horizontal/vertical scrolling for long lines
 *   **Proper Viewport Management:** Automatic scrolling keeps cursor visible with efficient rendering
 *   **Command-line Integration:** Open files directly from the command line
 *   **Persistent Storage:** Save changes with visual confirmation in the status bar

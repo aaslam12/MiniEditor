@@ -98,8 +98,13 @@ bool editor::save()
     return save(m_current_file_path);
 }
 
+// can be optimized by using mmap, but that is not cross-platform
+// will need to refactor the function to call OS-specific functions
 bool editor::save(const std::filesystem::path& path)
 {
+    if (!m_dirty)
+        return true;
+
     if (path.empty())
         return false;
 
@@ -378,7 +383,16 @@ void editor::flush_insert_buffer()
 size_t editor::get_total_lines() const
 {
     size_t lines = m_piece_table.get_line_count();
-    return lines > 0 ? lines : 1;
+    if (lines == 0)
+        return 1;
+
+    // if the content ends with a newline, there is an implicit empty line after it
+    // that the piece table doesn't count but the editor needs to show
+    size_t len = m_piece_table.length();
+    if (len > 0 && m_piece_table.get_char_at(len - 1) == '\n')
+        return lines + 1;
+
+    return lines;
 }
 
 size_t editor::get_cursor_row() const
