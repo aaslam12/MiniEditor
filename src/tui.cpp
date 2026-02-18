@@ -34,6 +34,7 @@ bool tui::init(const std::string& file_path)
     raw(); // disable Ctrl+S/Ctrl+Q flow control
     noecho();
     keypad(m_window, TRUE);
+    wtimeout(m_window, 8);
 
     int max_x, max_y;               // uses int internally
     getmaxyx(stdscr, max_y, max_x); // actual terminal size
@@ -47,6 +48,10 @@ bool tui::init(const std::string& file_path)
         m_editor.open(file_path);
     }
 
+    m_line_buffer.reserve(1024);
+    update_values();
+    render();
+    refresh();
     return true;
 }
 
@@ -65,19 +70,21 @@ void tui::update_values()
 
 void tui::tick()
 {
+    int ch = getch();
+    if (ch == ERR)
+        return;
+
+    handle_input(ch);
     update_values();
     render();
     refresh();
-
-    int ch = getch();
-    handle_input(ch);
 }
 
 void tui::render()
 {
     curs_set(0);
 
-    erase();
+    werase(m_window);
 
     if (m_viewport_height < 20 || m_viewport_width < 20)
     {
@@ -130,6 +137,8 @@ void tui::render()
         move(screen_row, screen_col);
     }
 
+    wnoutrefresh(m_window);
+    doupdate();
     curs_set(2);
 }
 
@@ -168,6 +177,17 @@ void tui::render_line(size_t screen_row, size_t col_offset)
         return;
     }
 
+    // gutter: line number + separator
+    int gutter_len = snprintf(m_gutter_buffer, sizeof(m_gutter_buffer), "%*zu | ", static_cast<int>(col_offset), line_num);
+    mvaddnstr(static_cast<int>(screen_row), 0, m_gutter_buffer, gutter_len);
+
+    size_t gutter_width = static_cast<size_t>(gutter_len);
+    size_t content_area_width = m_viewport_width > gutter_width ? m_viewport_width - gutter_width : 0;
+
+    if (content_area_width == 0)
+        return;
+
+    // get line content
     auto content = m_editor.get_line(line_num);
 
     // if this is the cursor line and there's an insert buffer, splice it in
@@ -190,10 +210,6 @@ void tui::render_line(size_t screen_row, size_t col_offset)
     std::stringstream ss;
     ss << std::setw(col_offset) << std::right << line_num << " | ";
     std::string gutter = ss.str();
-    size_t gutter_width = gutter.length();
-
-    // apply horizontal scroll and truncate content to fit viewport
-    size_t content_area_width = m_viewport_width > gutter_width ? m_viewport_width - gutter_width : 0;
 
     std::string visible_content;
     if (m_viewport_left_col < content.length())

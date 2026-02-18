@@ -34,11 +34,15 @@ private:
     editor m_editor;
     bool m_quit;
 
+    // optimization
+    char m_gutter_buffer[32];
+    std::string m_line_buffer;
+
     size_t m_viewport_top_line;
     size_t m_viewport_height;
     size_t m_viewport_width;
     size_t m_viewport_left_col; // horizontal scroll offset (0-indexed)
-    
+
     std::string m_status_message;
     bool m_show_status_message;
 
