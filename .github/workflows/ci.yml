@@ -51,9 +51,12 @@ jobs:
           }
           # CMake is preinstalled on windows-latest; ensure ninja in PATH
           try {
-            choco install -y catch2
+            & choco install -y catch2
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host 'catch2 choco install returned non-zero exit code; continuing and relying on CMake FetchContent fallback.'
+            }
           } catch {
-            Write-Host 'Note: Catch2 installation via choco may not be available; we will use vcpkg or bundled version.'
+            Write-Host 'Note: Catch2 installation via choco threw an exception; continuing and relying on CMake FetchContent fallback.'
           }
 
       - name: Configure (CMake) - Linux/macOS
