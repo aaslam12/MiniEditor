@@ -143,7 +143,17 @@ endif()
 # -----------------------
 include(CTest)
 if(MINIEDITOR_BUILD_TESTS AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  find_package(Catch2 3 REQUIRED)
+  # Try to find Catch2 via find_package; if not available, fetch it via FetchContent
+  find_package(Catch2 3 QUIET)
+  if(NOT Catch2_FOUND)
+    message(STATUS "Catch2 not found via find_package; fetching Catch2 v3 via FetchContent")
+    FetchContent_Declare(
+      catch2
+      GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+      GIT_TAG        v3.4.0
+    )
+    FetchContent_MakeAvailable(catch2)
+  endif()
 
   file(GLOB_RECURSE TEST_SRCS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/tests/*.cpp")
   if(TEST_SRCS)
