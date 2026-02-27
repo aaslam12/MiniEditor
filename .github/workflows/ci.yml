@@ -29,12 +29,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build cmake build-essential python3
+          sudo apt-get install -y ninja-build cmake build-essential python3 catch2 libcatch2-dev
       - name: Setup toolchain - macOS
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install cmake ninja python
+          brew install cmake ninja python catch2
       - name: Setup toolchain - Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -50,6 +50,11 @@ jobs:
             }
           }
           # CMake is preinstalled on windows-latest; ensure ninja in PATH
+          try {
+            choco install -y catch2
+          } catch {
+            Write-Host 'Note: Catch2 installation via choco may not be available; we will use vcpkg or bundled version.'
+          }
 
       - name: Configure (CMake) - Linux/macOS
         if: runner.os != 'Windows'
@@ -84,8 +89,8 @@ jobs:
         if: matrix.config == 'Debug'
         run: |
           # If CTest is configured this will run tests added by add_test
-          cmake --build build --target tests || true
-          ctest --test-dir build --output-on-failure || true
+          cmake --build build --target tests
+          ctest --test-dir build --output-on-failure
 
       - name: Package binary (Windows)
         if: runner.os == 'Windows'
