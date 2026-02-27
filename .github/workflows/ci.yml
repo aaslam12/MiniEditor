@@ -38,6 +38,7 @@ jobs:
       - name: Setup toolchain - Windows
         if: runner.os == 'Windows'
         shell: pwsh
+        continue-on-error: true
         run: |
           if (Get-Command ninja -ErrorAction SilentlyContinue) {
             ninja --version
