@@ -190,23 +190,6 @@ if(MINIEDITOR_BUILD_STRESS_TESTS)
 endif()
 
 # -----------------------
-# Format target
-# -----------------------
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  find_program(CLANG_FORMAT_EXE NAMES clang-format clang-format-14)
-  if(CLANG_FORMAT_EXE)
-    file(GLOB_RECURSE FORMAT_FILES CONFIGURE_DEPENDS
-      "${CMAKE_SOURCE_DIR}/src/*.c" "${CMAKE_SOURCE_DIR}/src/*.cpp"
-      "${CMAKE_SOURCE_DIR}/include/*.h" "${CMAKE_SOURCE_DIR}/include/*.hpp"
-    )
-    add_custom_target(format
-        COMMAND ${CLANG_FORMAT_EXE} -i ${FORMAT_FILES}
-        COMMENT "Running clang-format on sources"
-    )
-  endif()
-endif()
-
-# -----------------------
 # Helpful messages
 # -----------------------
 message(STATUS "Project: ${PROJECT_NAME} ${PROJECT_VERSION}")
