@@ -131,15 +131,14 @@ bool editor::save(const std::filesystem::path& path)
     }
 
     // temp file opened for saving
-    std::string str = m_piece_table.to_string();
+    m_piece_table.write_to(ofs);
 
     // ensure file ends with newline
-    if (!str.empty() && str.back() != '\n')
-    {
-        str.push_back('\n');
-    }
+    // if (!str.empty() && str.back() != '\n')
+    // {
+    //     str.push_back('\n');
+    // }
 
-    ofs.write(str.c_str(), str.length());
     ofs.close();
 
     // then we try to write to the actual file

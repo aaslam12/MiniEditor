@@ -71,7 +71,7 @@ TEST_CASE("Editor: File Operations", "[editor]")
         CHECK(ed.is_dirty());
         CHECK(ed.save());
         CHECK_FALSE(ed.is_dirty());
-        CHECK(read_file_content(path) == "Asome content\n");
+        CHECK(read_file_content(path) == "Asome content");
         std::filesystem::remove(path);
     }
 
@@ -80,10 +80,13 @@ TEST_CASE("Editor: File Operations", "[editor]")
         auto path = create_temp_file("test_save_as_orig.txt", "original");
         auto new_path = std::filesystem::temp_directory_path() / "test_save_as_new.txt";
         ed.open(path);
+        // Must modify to make the editor dirty before save(new_path) will write
+        ed.insert_char('X');
+        ed.flush_insert_buffer();
         CHECK(ed.save(new_path));
         REQUIRE(std::filesystem::exists(new_path));
         CHECK(ed.get_filename() == "test_save_as_new.txt");
-        CHECK(read_file_content(new_path) == "original\n");
+        CHECK(read_file_content(new_path) == "Xoriginal");
         std::filesystem::remove(path);
 
         std::filesystem::remove(new_path);

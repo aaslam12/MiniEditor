@@ -171,6 +171,24 @@ size_t piece_table::get_index_for_line(size_t target_line) const
     return byte_offset + n->data.length;
 }
 
+void piece_table::write_to(std::ostream& os) const
+{
+    m_treap.for_each([this, &os](const AL::piece& piece) {
+        if (piece.buf_type == AL::buffer_type::ORIGINAL)
+        {
+            const std::string& buffer = m_original_buffer;
+            os.write(buffer.data() + piece.start, piece.length);
+        }
+        else
+        {
+            const std::string& buffer = m_add_buffer;
+            os.write(buffer.data() + piece.start, piece.length);
+        }
+
+        return false;
+    });
+}
+
 std::string piece_table::to_string() const
 {
     if (!m_needs_rebuild)

@@ -82,6 +82,8 @@ if(NOT pdcurses_mod_POPULATED)
   set_target_properties(pdcurses PROPERTIES C_STANDARD 99)
 endif()
 
+find_package(palloc REQUIRED)
+
 # -----------------------
 # Sources
 # -----------------------
@@ -105,7 +107,7 @@ target_include_directories(core
 )
 
 target_compile_features(core PUBLIC cxx_std_20)
-target_link_libraries(core PUBLIC pdcurses)
+target_link_libraries(core PUBLIC pdcurses palloc::palloc)
 
 # Define macros for build type and testing
 if(MINIEDITOR_BUILD_TESTS)

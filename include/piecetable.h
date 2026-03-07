@@ -2,6 +2,7 @@
 
 #include "implicit_treap.h"
 #include <cstddef>
+#include <ostream>
 #include <string>
 
 namespace AL
@@ -71,6 +72,8 @@ public:
     void remove(size_t position, size_t length);
     void clear();
     size_t get_index_for_line(size_t target_line) const;
+
+    void write_to(std::ostream& os) const;
     std::string to_string() const;
     std::string get_line(size_t line_number) const;
     size_t length() const;
