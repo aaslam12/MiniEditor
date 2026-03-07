@@ -82,7 +82,12 @@ if(NOT pdcurses_mod_POPULATED)
   set_target_properties(pdcurses PROPERTIES C_STANDARD 99)
 endif()
 
-find_package(palloc REQUIRED)
+FetchContent_Declare(
+  palloc
+  GIT_REPOSITORY https://github.com/aaslam12/Palloc.git
+  GIT_TAG        main
+)
+FetchContent_MakeAvailable(palloc)
 
 # -----------------------
 # Sources
@@ -107,7 +112,7 @@ target_include_directories(core
 )
 
 target_compile_features(core PUBLIC cxx_std_20)
-target_link_libraries(core PUBLIC pdcurses palloc::palloc)
+target_link_libraries(core PUBLIC pdcurses palloc)
 
 # Define macros for build type and testing
 if(MINIEDITOR_BUILD_TESTS)
@@ -187,16 +192,18 @@ endif()
 # -----------------------
 # Format target
 # -----------------------
-find_program(CLANG_FORMAT_EXE NAMES clang-format clang-format-14)
-if(CLANG_FORMAT_EXE)
-  file(GLOB_RECURSE FORMAT_FILES CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/src/*.c" "${CMAKE_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_SOURCE_DIR}/include/*.h" "${CMAKE_SOURCE_DIR}/include/*.hpp"
-  )
-  add_custom_target(format
-      COMMAND ${CLANG_FORMAT_EXE} -i ${FORMAT_FILES}
-      COMMENT "Running clang-format on sources"
-  )
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  find_program(CLANG_FORMAT_EXE NAMES clang-format clang-format-14)
+  if(CLANG_FORMAT_EXE)
+    file(GLOB_RECURSE FORMAT_FILES CONFIGURE_DEPENDS
+      "${CMAKE_SOURCE_DIR}/src/*.c" "${CMAKE_SOURCE_DIR}/src/*.cpp"
+      "${CMAKE_SOURCE_DIR}/include/*.h" "${CMAKE_SOURCE_DIR}/include/*.hpp"
+    )
+    add_custom_target(format
+        COMMAND ${CLANG_FORMAT_EXE} -i ${FORMAT_FILES}
+        COMMENT "Running clang-format on sources"
+    )
+  endif()
 endif()
 
 # -----------------------
