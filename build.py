@@ -120,11 +120,10 @@ def main():
             env = os.environ.copy()
             env["CTEST_COLOR_OUTPUT"] = "ON"
             env["CLICOLOR_FORCE"] = "1"
-            
+
             # ctest handles running the registered tests
             subprocess.check_call(
-                ["ctest", "--output-on-failure", "--test-dir", build_dir],
-                env=env
+                ["ctest", "--output-on-failure", "--test-dir", build_dir], env=env
             )
         except subprocess.CalledProcessError:
             print("Tests failed.")
