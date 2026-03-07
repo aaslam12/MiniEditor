@@ -89,6 +89,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(palloc)
 
+# Ensure palloc's include directory is available to all targets
+FetchContent_GetProperties(palloc)
+if(palloc_POPULATED)
+  include_directories(${palloc_SOURCE_DIR}/include)
+endif()
+
 # -----------------------
 # Sources
 # -----------------------
