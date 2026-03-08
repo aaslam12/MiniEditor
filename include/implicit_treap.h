@@ -142,6 +142,39 @@ private:
         return false;
     }
 
+    // O(log n) skip to the piece containing start_byte, then emit in-order from there
+    template<piece_callback func_callback>
+    bool for_each_from_byte_internal(node* current, size_t start_byte, size_t accum, func_callback&& callback) const
+    {
+        if (!current)
+            return false;
+
+        const size_t left_len = get_subtree_length(current->left);
+        const size_t node_start = accum + left_len;
+        const size_t node_end = node_start + current->data.length;
+
+        if (start_byte >= node_end)
+        {
+            // Left subtree and this node are entirely before start_byte: skip both, go right
+            return for_each_from_byte_internal(current->right, start_byte, node_end, std::forward<func_callback>(callback));
+        }
+
+        if (start_byte >= node_start)
+        {
+            // start_byte lands in this node's piece: skip left subtree, emit from here
+            if (callback(current->data))
+                return true;
+            return for_each_internal(current->right, std::forward<func_callback>(callback));
+        }
+
+        // start_byte is somewhere in the left subtree
+        if (for_each_from_byte_internal(current->left, start_byte, accum, std::forward<func_callback>(callback)))
+            return true;
+        if (callback(current->data))
+            return true;
+        return for_each_internal(current->right, std::forward<func_callback>(callback));
+    }
+
 public:
     implicit_treap();
     ~implicit_treap();
@@ -184,6 +217,14 @@ public:
     void for_each(node* n, func_callback&& callback) const
     {
         for_each_internal(n, std::forward<func_callback>(callback));
+    }
+
+    // Traverses in-order starting from the piece containing start_byte.
+    // Skips all pieces before start_byte in O(log n), then emits from there.
+    template<piece_callback func_callback>
+    void for_each_from_byte(size_t start_byte, func_callback&& callback) const
+    {
+        for_each_from_byte_internal(m_root, start_byte, 0, std::forward<func_callback>(callback));
     }
 
     template<typename split_strategy>

@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[])
 {
-    std::string file_path;
+    std::string file_path = "/home/al/Projects/TextEditor/stress_test.txt";
 
     if (argc > 1)
     {

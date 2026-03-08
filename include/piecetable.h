@@ -24,7 +24,8 @@ private:
 
     // normalizes string IN PLACE
     // replaces OS specific line endings with '\n'
-    void normalize(std::string& text);
+    // returns new lines ('\n') encountered while doing the pass
+    size_t normalize(std::string& text);
     size_t count_newlines(const piece& p) const;
     size_t count_newlines(const std::string& str) const;
 

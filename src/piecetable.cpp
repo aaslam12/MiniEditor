@@ -7,9 +7,27 @@
 
 namespace AL
 {
-void piece_table::normalize(std::string& text)
+size_t piece_table::normalize(std::string& text)
 {
-    text.erase(std::remove_if(text.begin(), text.end(), [](unsigned char c) { return c == '\r'; }), text.end());
+    if (text.find('\n') != std::string::npos)
+    {}
+    else if (text.find('\r') == std::string::npos)
+        return 0;
+
+    size_t newline_count = 0;
+    auto it = text.begin();
+
+    for (auto c : text)
+    {
+        if (c == '\n')
+            newline_count++;
+
+        if (c != '\r')
+            *it++ = c;
+    }
+
+    text.erase(it, text.end());
+    return newline_count;
 }
 
 size_t piece_table::count_newlines(const piece& p) const
@@ -67,7 +85,7 @@ piece_table& piece_table::operator=(piece_table&& other) noexcept
 piece_table::piece_table(std::string initial_content) : m_needs_rebuild(true)
 {
     // normalize the content before doing anything
-    normalize(initial_content);
+    size_t newline_count = normalize(initial_content);
     m_original_buffer = std::move(initial_content);
 
     // dont insert a zero length piece  it breaks treap operations
@@ -78,15 +96,24 @@ piece_table::piece_table(std::string initial_content) : m_needs_rebuild(true)
     piece.length = m_original_buffer.length();
     piece.buf_type = AL::buffer_type::ORIGINAL;
     piece.start = 0;
-    piece.newline_count = count_newlines(m_original_buffer);
+    piece.newline_count = newline_count;
 
     m_treap.insert(0, piece, get_split_strategy());
 }
 
 void piece_table::insert(size_t file_insert_position, std::string text)
 {
-    // normalize the content before doing anything
-    normalize(text);
+    size_t newline_count = 0;
+
+    // Only do full normalize (strip \r) if text could be pasted content
+    if (text.find('\r') != std::string::npos)
+        newline_count = normalize(text);
+    else
+    {
+        for (char c : text)
+            if (c == '\n')
+                newline_count++;
+    }
 
     if (file_insert_position > length())
     {
@@ -100,7 +127,7 @@ void piece_table::insert(size_t file_insert_position, std::string text)
     m_add_buffer.append(text);
 
     m_treap.insert(file_insert_position,
-                   {.buf_type = AL::buffer_type::ADD, .start = start_pos, .length = text_length, .newline_count = count_newlines(text)},
+                   {.buf_type = AL::buffer_type::ADD, .start = start_pos, .length = text_length, .newline_count = newline_count},
                    get_split_strategy());
 
     m_needs_rebuild = true;
@@ -221,54 +248,38 @@ std::string piece_table::get_line(size_t line_number) const
         return result;
 
     size_t line_start_index = get_index_for_line(line_number);
-    if (line_start_index >= length() && length() > 0)
-    {
+    if (line_start_index >= length())
         return result;
-    }
 
-    size_t current_index = 0;
-    bool started = false;
+    // Find the piece containing line_start_index in O(log n)
+    node* start_node = nullptr;
+    size_t piece_byte_offset = 0;
+    m_treap.find_by_byte(line_start_index, start_node, piece_byte_offset);
+    if (!start_node)
+        return result;
 
-    m_treap.for_each([&](const AL::piece& p) {
-        size_t piece_global_start_index = current_index;
-        size_t piece_global_end_index = current_index + p.length;
+    const size_t skip_in_first = line_start_index - piece_byte_offset;
+    bool is_first = true;
 
-        if (!started && line_start_index >= piece_global_start_index && line_start_index < piece_global_end_index)
+    // Emit from piece_byte_offset onwards, skipping the leading bytes in the first piece
+    m_treap.for_each_from_byte(piece_byte_offset, [&](const AL::piece& p) {
+        const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
+
+        size_t offset = 0;
+        if (is_first)
         {
-            started = true;
-            size_t offset_in_piece = line_start_index - piece_global_start_index;
-
-            const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
-            std::string_view piece_view(buffer.data() + p.start + offset_in_piece, p.length - offset_in_piece);
-
-            size_t newline_pos = piece_view.find('\n');
-            if (newline_pos != std::string_view::npos)
-            {
-                result.append(piece_view.substr(0, newline_pos));
-                return true;
-            }
-            else
-            {
-                result.append(piece_view);
-            }
+            offset = skip_in_first;
+            is_first = false;
         }
-        else if (started)
+
+        std::string_view pv(buffer.data() + p.start + offset, p.length - offset);
+        const size_t nl = pv.find('\n');
+        if (nl != std::string_view::npos)
         {
-            const std::string& buffer = (p.buf_type == buffer_type::ORIGINAL ? m_original_buffer : m_add_buffer);
-            std::string_view piece_view(buffer.data() + p.start, p.length);
-
-            size_t newline_pos = piece_view.find('\n');
-            if (newline_pos != std::string_view::npos)
-            {
-                result.append(piece_view.substr(0, newline_pos));
-                return true;
-            }
-            else
-            {
-                result.append(piece_view);
-            }
+            result.append(pv.data(), nl);
+            return true;
         }
-        current_index += p.length;
+        result.append(pv);
         return false;
     });
 
