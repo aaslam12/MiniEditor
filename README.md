@@ -88,24 +88,92 @@ The status bar at the bottom displays:
 
 ### Benchmark Results
 
-The following results are obtained on a standard Linux machine using Release build optimization:
+All results are from a Release build (`-O3`) on a standard Linux x86-64 machine.
 
 ```bash
 python3 build.py --config Release --stress-test
 ```
 
-#### Sequential Operations
-| Operation | Performance |
-| :--- | :--- |
-| Insert 100k characters sequentially | ~0.09 µs per insert |
-| Delete 100k characters sequentially | ~0.09 µs per delete |
+#### Front Insertions & Deletions
+Stress-tests the hardest case for most editors: repeated edits at position 0.
 
-#### Random Operations (10MB buffer)
+| Operation | Count | Total Time | Avg per op |
+| :--- | ---: | ---: | ---: |
+| Insert at front | 100,000 | 9.56 ms | **0.096 µs** |
+| Delete from front | 100,000 | 9.09 ms | **0.091 µs** |
+
+#### Alternating Insert / Delete
+Rapid alternation between inserts and deletes at random positions.
+
 | Metric | Result |
+| :--- | ---: |
+| Cycles | 50,000 |
+| Total time | 31.7 ms |
+| **Avg per cycle** | **0.63 µs** |
+| Full string rebuild | 0.008 ms |
+
+#### Random Edits (10 MB buffer)
+500k random insertions and deletions across a 10 million character buffer.
+
+| Metric | Result |
+| :--- | ---: |
+| Operations | 500,000 |
+| Total time | 674.7 ms |
+| **Avg per edit** | **1.35 µs** |
+| Full reconstruction | 33.4 ms |
+
+#### Tree Insertion Throughput (10M pieces)
+Measures raw piece insertion speed building a tree of 10 million nodes.
+
+| Metric | Result |
+| :--- | ---: |
+| Total pieces inserted | 10,000,000 |
+| Total time | 1.49 s |
+| **Avg per insertion** | **0.149 µs** |
+| **Throughput** | **~82 MB/s** |
+| Total data | 122.9 MB |
+| Peak RAM | ~986 MB |
+
+#### Line Access — `get_line` (O(log n))
+Random `get_line` reads across a table built from 10,000 individually inserted pieces.
+
+| Metric | Result |
+| :--- | ---: |
+| Reads | 50,000 |
+| Total time | 16.5 ms |
+| **Avg per read** | **0.33 µs** |
+
+#### Line Access — `get_line` on 100k-line file
+
+| Metric | Result |
+| :--- | ---: |
+| Lines in file | 100,000 |
+| Random `get_line` reads | 10,000 |
+| **Avg per `get_line`** | **0.79 µs** |
+| Random `get_index_for_line` lookups | 1,000 |
+| **Avg per `get_index_for_line`** | **0.50 µs** |
+| Random newline inserts | 1,000 |
+| Avg per newline insert | 0.65 µs |
+
+#### `get_index_for_line` on 10M-piece tree
+
+| Metric | Result |
+| :--- | ---: |
+| Pieces in tree | 10,000,000 |
+| **Search time (single lookup)** | **0.005 ms** |
+
+### Flamegraphs
+
+Interactive SVG flamegraphs are in the [`flamegraphs/`](flamegraphs/) directory, generated with `perf record -F 999 --call-graph dwarf` on each stress test.
+
+| Benchmark | Flamegraph |
 | :--- | :--- |
-| Total operations | 500,000 random insertions and deletions |
-| Average time per edit | ~1.54 µs |
-| Index lookup / search time | ~0.007 ms |
+| Alternating insert/delete | [stress_alternating_ops.svg](flamegraphs/stress_alternating_ops.svg) |
+| Front insertions/deletions | [stress_front_ops.svg](flamegraphs/stress_front_ops.svg) |
+| 10M piece tree insertion | [stress_get_index.svg](flamegraphs/stress_get_index.svg) |
+| Random `get_line` (10k pieces) | [stress_get_line.svg](flamegraphs/stress_get_line.svg) |
+| 100k line file access | [stress_newlines.svg](flamegraphs/stress_newlines.svg) |
+| Random edits (10MB buffer) | [stress_random_edits.svg](flamegraphs/stress_random_edits.svg) |
 
 ## Testing
 
