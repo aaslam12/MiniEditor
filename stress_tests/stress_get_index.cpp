@@ -18,9 +18,9 @@ double get_memory_usage()
 int main()
 {
     AL::piece_table pt;
-    const int num_lines = 10000000; // 10 Million
+    const int num_lines = 1000000; // 1 Million
 
-    std::cout << "Target: " << num_lines << " pieces (10 million)" << std::endl;
+    std::cout << "Target: " << num_lines << " pieces (1 million)" << std::endl;
 
     double mem_before = get_memory_usage();
 

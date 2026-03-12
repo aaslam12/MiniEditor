@@ -1,14 +1,14 @@
 #include "piecetable.h"
+#include "alias.h"
 #include <chrono>
 #include <iostream>
 #include <random>
 #include <string>
-#include <vector>
 
 int main()
 {
     AL::piece_table pt("Initial line\n");
-    std::vector<std::string> expected_lines;
+    palloc_vector<std::string> expected_lines;
     expected_lines.push_back("Initial line");
 
     const int num_iterations = 10000;

@@ -1,16 +1,9 @@
 #pragma once
 
-#include "allocator.h"
-#include <string>
-#include <vector>
+#include "palloc_global.h"
 
-template<typename Allocator>
-using basic_string_custom = std::basic_string<char, std::char_traits<char>, Allocator>;
-
-using arena_string = basic_string_custom<AL::arena_allocator<char>>;
-using slab_string = basic_string_custom<AL::slab_allocator<char>>;
-
+// Convenience aliases in global namespace
 template<typename T>
-using slab_vector = std::vector<T, AL::slab_allocator<T>>;
+using palloc_vector = AL::palloc_vector<T>;
 
 constexpr size_t ONE_MB = (size_t)1024 * 1024;

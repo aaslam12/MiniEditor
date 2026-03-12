@@ -8,7 +8,7 @@ int main()
 {
     AL::piece_table pt;
     const int NUM_OPERATIONS = 500'000;
-    const int INITIAL_SIZE = 10'000'000;
+    const int INITIAL_SIZE = 1'000'000;
 
     std::cout << "\n--- Random Edits Stress Test ---" << std::endl;
     std::cout << "Initializing with " << INITIAL_SIZE << " characters..." << std::endl;

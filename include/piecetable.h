@@ -81,5 +81,7 @@ public:
     size_t get_line_count() const;
     char get_char_at(size_t byte_index) const;
     size_t get_line_length(size_t line_number) const;
+
+    void get_pieces(palloc_vector<piece>& out) const { m_treap.get_pieces(out); }
 };
 } // namespace AL

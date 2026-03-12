@@ -8,7 +8,7 @@ void implicit_treap::delete_nodes(node* n)
         return;
     delete_nodes(n->left);
     delete_nodes(n->right);
-    delete n;
+    deallocate_node(n);
 }
 
 implicit_treap::implicit_treap() : m_root(nullptr)
@@ -204,7 +204,7 @@ node* implicit_treap::copy_nodes(const node* n)
     p.start = n->data.start;
     p.newline_count = n->data.newline_count;
 
-    node* new_node = new node(p);
+    node* new_node = allocate_node(p);
     new_node->priority = n->priority;
     new_node->left = copy_nodes(n->left);
     new_node->right = copy_nodes(n->right);
@@ -214,7 +214,7 @@ node* implicit_treap::copy_nodes(const node* n)
     return new_node;
 }
 
-void implicit_treap::get_pieces(node* n, std::vector<piece>& pieces) const
+void implicit_treap::get_pieces(node* n, palloc_vector<piece>& pieces) const
 {
     if (!n)
         return;
@@ -259,7 +259,7 @@ void implicit_treap::clear()
     m_root = nullptr;
 }
 
-void implicit_treap::get_pieces(std::vector<piece>& pieces) const
+void implicit_treap::get_pieces(palloc_vector<piece>& pieces) const
 {
     return get_pieces(m_root, pieces);
 }
