@@ -99,8 +99,8 @@ Stress-tests the hardest case for most editors: repeated edits at position 0.
 
 | Operation | Count | Total Time | Avg per op |
 | :--- | ---: | ---: | ---: |
-| Insert at front | 100,000 | 9.56 ms | **0.096 µs** |
-| Delete from front | 100,000 | 9.09 ms | **0.091 µs** |
+| Insert at front | 100,000 | 16.0 ms | **0.160 µs** |
+| Delete from front | 100,000 | 11.7 ms | **0.117 µs** |
 
 #### Alternating Insert / Delete
 Rapid alternation between inserts and deletes at random positions.
@@ -108,31 +108,31 @@ Rapid alternation between inserts and deletes at random positions.
 | Metric | Result |
 | :--- | ---: |
 | Cycles | 50,000 |
-| Total time | 31.7 ms |
-| **Avg per cycle** | **0.63 µs** |
-| Full string rebuild | 0.008 ms |
+| Total time | 33.4 ms |
+| **Avg per cycle** | **0.668 µs** |
+| Full string rebuild | 0.010 ms |
 
-#### Random Edits (10 MB buffer)
-500k random insertions and deletions across a 10 million character buffer.
+#### Random Edits (1 MB buffer)
+500k random insertions and deletions across a 1 million character buffer.
 
 | Metric | Result |
 | :--- | ---: |
 | Operations | 500,000 |
-| Total time | 674.7 ms |
-| **Avg per edit** | **1.35 µs** |
-| Full reconstruction | 33.4 ms |
+| Total time | 705.9 ms |
+| **Avg per edit** | **1.41 µs** |
+| Full reconstruction | 2.7 ms |
 
-#### Tree Insertion Throughput (10M pieces)
-Measures raw piece insertion speed building a tree of 10 million nodes.
+#### Tree Insertion Throughput (1M pieces)
+Measures raw piece insertion speed building a tree of 1 million nodes.
 
 | Metric | Result |
 | :--- | ---: |
-| Total pieces inserted | 10,000,000 |
-| Total time | 1.49 s |
-| **Avg per insertion** | **0.149 µs** |
-| **Throughput** | **~82 MB/s** |
-| Total data | 122.9 MB |
-| Peak RAM | ~986 MB |
+| Total pieces inserted | 1,000,000 |
+| Total time | 0.214 s |
+| **Avg per insertion** | **0.214 µs** |
+| **Throughput** | **~53 MB/s** |
+| Total data | 11.3 MB |
+| Peak RAM | ~1.7 GB |
 
 #### Line Access — `get_line` (O(log n))
 Random `get_line` reads across a table built from 10,000 individually inserted pieces.
@@ -140,8 +140,8 @@ Random `get_line` reads across a table built from 10,000 individually inserted p
 | Metric | Result |
 | :--- | ---: |
 | Reads | 50,000 |
-| Total time | 16.5 ms |
-| **Avg per read** | **0.33 µs** |
+| Total time | 45.3 ms |
+| **Avg per read** | **0.906 µs** |
 
 #### Line Access — `get_line` on 100k-line file
 
@@ -149,11 +149,11 @@ Random `get_line` reads across a table built from 10,000 individually inserted p
 | :--- | ---: |
 | Lines in file | 100,000 |
 | Random `get_line` reads | 10,000 |
-| **Avg per `get_line`** | **0.79 µs** |
+| **Avg per `get_line`** | **0.868 µs** |
 | Random `get_index_for_line` lookups | 1,000 |
-| **Avg per `get_index_for_line`** | **0.50 µs** |
+| **Avg per `get_index_for_line`** | **0.578 µs** |
 | Random newline inserts | 1,000 |
-| Avg per newline insert | 0.65 µs |
+| Avg per newline insert | 0.787 µs |
 
 #### `get_index_for_line` on 10M-piece tree
 
