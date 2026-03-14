@@ -51,6 +51,8 @@ python build.py
 | `--no-tests` | Skips building and running unit tests (default in Release mode). |
 | `--stress-test` | Builds and runs the performance stress tests. Should be paired with the Release configuration |
 | `--static` | Links standard libraries (`libgcc`, `libstdc++`) statically. Useful for portability. |
+| `--palloc-treap-nodes` | Enables Palloc-backed allocation for implicit treap nodes (enabled by default). |
+| `--no-palloc-treap-nodes` | Disables Palloc-backed implicit treap node allocation and uses regular `new/delete`. |
 
 ## Usage
 
@@ -94,13 +96,24 @@ All results are from a Release build (`-O3`) on a standard Linux x86-64 machine.
 python3 build.py --config Release --stress-test
 ```
 
+By default, MiniEditor uses Palloc for implicit treap nodes but keeps global `new`/`delete` on the system allocator. The global override path was removed due instability and large performance regressions in deallocation-heavy workloads.
+
+#### Allocator Mode Snapshot (`stress_get_index` + `stress_random_edits`)
+
+| Configuration | `stress_get_index` | `stress_random_edits` | Memory (`get_index`) |
+| :--- | ---: | ---: | ---: |
+| `--palloc-treap-nodes` (default) | 0.165-0.198 s | 0.745-0.863 s | ~145 MB |
+| `--no-palloc-treap-nodes` | 0.141-0.143 s | 0.402-0.425 s | ~89 MB |
+
+The detailed per-benchmark tables below were captured in `--no-palloc-treap-nodes` mode to reflect baseline editor algorithm performance.
+
 #### Front Insertions & Deletions
 Stress-tests the hardest case for most editors: repeated edits at position 0.
 
 | Operation | Count | Total Time | Avg per op |
 | :--- | ---: | ---: | ---: |
-| Insert at front | 100,000 | 16.0 ms | **0.160 µs** |
-| Delete from front | 100,000 | 11.7 ms | **0.117 µs** |
+| Insert at front | 100,000 | 9.79 ms | **0.098 µs** |
+| Delete from front | 100,000 | 9.44 ms | **0.094 µs** |
 
 #### Alternating Insert / Delete
 Rapid alternation between inserts and deletes at random positions.
@@ -108,9 +121,9 @@ Rapid alternation between inserts and deletes at random positions.
 | Metric | Result |
 | :--- | ---: |
 | Cycles | 50,000 |
-| Total time | 33.4 ms |
-| **Avg per cycle** | **0.668 µs** |
-| Full string rebuild | 0.010 ms |
+| Total time | 32.0 ms |
+| **Avg per cycle** | **0.639 µs** |
+| Full string rebuild | 0.009 ms |
 
 #### Random Edits (1 MB buffer)
 500k random insertions and deletions across a 1 million character buffer.
@@ -118,9 +131,9 @@ Rapid alternation between inserts and deletes at random positions.
 | Metric | Result |
 | :--- | ---: |
 | Operations | 500,000 |
-| Total time | 705.9 ms |
-| **Avg per edit** | **1.41 µs** |
-| Full reconstruction | 2.7 ms |
+| Total time | 401.1 ms |
+| **Avg per edit** | **0.802 µs** |
+| Full reconstruction | 2.4 ms |
 
 #### Tree Insertion Throughput (1M pieces)
 Measures raw piece insertion speed building a tree of 1 million nodes.
@@ -128,11 +141,11 @@ Measures raw piece insertion speed building a tree of 1 million nodes.
 | Metric | Result |
 | :--- | ---: |
 | Total pieces inserted | 1,000,000 |
-| Total time | 0.214 s |
-| **Avg per insertion** | **0.214 µs** |
-| **Throughput** | **~53 MB/s** |
+| Total time | 0.145 s |
+| **Avg per insertion** | **0.145 µs** |
+| **Throughput** | **~78 MB/s** |
 | Total data | 11.3 MB |
-| Peak RAM | ~1.7 GB |
+| Peak RAM | ~74.8 MB |
 
 #### Line Access — `get_line` (O(log n))
 Random `get_line` reads across a table built from 10,000 individually inserted pieces.
@@ -140,8 +153,8 @@ Random `get_line` reads across a table built from 10,000 individually inserted p
 | Metric | Result |
 | :--- | ---: |
 | Reads | 50,000 |
-| Total time | 45.3 ms |
-| **Avg per read** | **0.906 µs** |
+| Total time | 16.8 ms |
+| **Avg per read** | **0.336 µs** |
 
 #### Line Access — `get_line` on 100k-line file
 
@@ -149,18 +162,18 @@ Random `get_line` reads across a table built from 10,000 individually inserted p
 | :--- | ---: |
 | Lines in file | 100,000 |
 | Random `get_line` reads | 10,000 |
-| **Avg per `get_line`** | **0.868 µs** |
+| **Avg per `get_line`** | **0.667 µs** |
 | Random `get_index_for_line` lookups | 1,000 |
-| **Avg per `get_index_for_line`** | **0.578 µs** |
+| **Avg per `get_index_for_line`** | **0.460 µs** |
 | Random newline inserts | 1,000 |
-| Avg per newline insert | 0.787 µs |
+| Avg per newline insert | 0.699 µs |
 
 #### `get_index_for_line` on 10M-piece tree
 
 | Metric | Result |
 | :--- | ---: |
 | Pieces in tree | 10,000,000 |
-| **Search time (single lookup)** | **0.005 ms** |
+| **Search time (single lookup)** | **0.003 ms** |
 
 ### Flamegraphs
 

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace AL
 {
@@ -113,7 +114,7 @@ public:
 private:
     static node* allocate_node(const piece& p)
     {
-        void* mem = AL::get_global_slab().palloc(sizeof(node));
+        void* mem = AL::get_treap_slab().palloc(sizeof(node));
         if (!mem)
             throw std::bad_alloc();
         return std::construct_at(static_cast<node*>(mem), p);
@@ -124,7 +125,7 @@ private:
         if (!n)
             return;
         std::destroy_at(n);
-        AL::get_global_slab().free(n, sizeof(node));
+        AL::get_treap_slab().free(n, sizeof(node));
     }
 
     node* merge(node* l, node* r);
@@ -136,7 +137,7 @@ private:
     void find_line_position(size_t target_line, node* current, size_t lines_before, node*& n, size_t& byte_offset, size_t& line_in_piece) const;
     void delete_nodes(node* n);
     node* copy_nodes(const node* n); // performs deep copy
-    void get_pieces(node* n, palloc_vector<piece>& pieces) const;
+    void get_pieces(node* n, std::vector<piece>& pieces) const;
 
     // helper function allows you traverse through all nodes in the subtree of the specified node in in-order
     // and run a callback function on each of them
@@ -214,7 +215,7 @@ public:
     size_t get_newline_count() const;
     bool empty() const;
     void clear();
-    void get_pieces(palloc_vector<AL::piece>& pieces) const;
+    void get_pieces(std::vector<AL::piece>& pieces) const;
 
     // allows you traverse through all nodes in in-order
     // and run a callback function on each of them

@@ -11,6 +11,7 @@ option(MINIEDITOR_BUILD_STRESS_TESTS "Build performance stress tests" OFF)
 option(MINIEDITOR_STATIC_LINKING "Link libraries statically" OFF)
 option(MINIEDITOR_ENABLE_SANITIZERS "Enable Address/Undefined sanitizers (only in Debug)" OFF)
 option(MINIEDITOR_USE_CLANG_TIDY "Run clang-tidy during builds if available" OFF)
+option(MINIEDITOR_PALLOC_SINGLE_THREADED "Build Palloc in single-threaded mode" ON)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
@@ -84,9 +85,10 @@ endif()
 
 FetchContent_Declare(
   palloc
-  GIT_REPOSITORY https://github.com/aaslam12/Palloc.git
-  GIT_TAG        main
+  SOURCE_DIR /home/al/Projects/Palloc
 )
+# Propagate single-threaded mode into the local Palloc subproject.
+set(PALLOC_SINGLE_THREADED ${MINIEDITOR_PALLOC_SINGLE_THREADED} CACHE BOOL "Disable Palloc mutexes" FORCE)
 FetchContent_MakeAvailable(palloc)
 
 # Ensure palloc's include directory is available to all targets
@@ -102,6 +104,10 @@ file(GLOB_RECURSE ALL_SRC CONFIGURE_DEPENDS
   "${CMAKE_SOURCE_DIR}/src/*.cpp"
   "${CMAKE_SOURCE_DIR}/src/*.c"
 )
+
+# Global new/delete override path was removed due high regression risk and
+# initialization recursion in the current dependency stack.
+list(FILTER ALL_SRC EXCLUDE REGEX ".*/palloc_overrides.cpp$")
 
 # exclude main.cpp from core library if present
 set(MAIN_CPP "${CMAKE_SOURCE_DIR}/src/main.cpp")
@@ -201,3 +207,4 @@ endif()
 message(STATUS "Project: ${PROJECT_NAME} ${PROJECT_VERSION}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build tests: ${MINIEDITOR_BUILD_TESTS}")
+message(STATUS "Palloc single-threaded: ${MINIEDITOR_PALLOC_SINGLE_THREADED}")

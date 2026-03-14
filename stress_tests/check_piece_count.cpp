@@ -2,6 +2,7 @@
 #include "alias.h"
 #include <iostream>
 #include <random>
+#include <vector>
 
 int main()
 {
@@ -13,7 +14,7 @@ int main()
             pt.insert(pt.length(), "Line " + std::to_string(i) + "\n");
         }
         
-        palloc_vector<AL::piece> pieces;
+        std::vector<AL::piece> pieces;
         pt.get_pieces(pieces);
         std::cout << "Sequential 10k inserts: " << pieces.size() << " pieces, " 
                   << pt.length() << " bytes" << std::endl;
@@ -36,7 +37,7 @@ int main()
             }
         }
         
-        palloc_vector<AL::piece> pieces;
+        std::vector<AL::piece> pieces;
         pt.get_pieces(pieces);
         std::cout << "Random 100k edits: " << pieces.size() << " pieces, " 
                   << pt.length() << " bytes" << std::endl;

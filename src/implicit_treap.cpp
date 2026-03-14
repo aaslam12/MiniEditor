@@ -214,7 +214,7 @@ node* implicit_treap::copy_nodes(const node* n)
     return new_node;
 }
 
-void implicit_treap::get_pieces(node* n, palloc_vector<piece>& pieces) const
+void implicit_treap::get_pieces(node* n, std::vector<piece>& pieces) const
 {
     if (!n)
         return;
@@ -259,7 +259,7 @@ void implicit_treap::clear()
     m_root = nullptr;
 }
 
-void implicit_treap::get_pieces(palloc_vector<piece>& pieces) const
+void implicit_treap::get_pieces(std::vector<piece>& pieces) const
 {
     return get_pieces(m_root, pieces);
 }

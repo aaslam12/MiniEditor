@@ -36,6 +36,32 @@ def main():
     parser.add_argument(
         "--static", action="store_true", help="Link libraries statically"
     )
+    parser.set_defaults(palloc_treap_nodes=True)
+    parser.add_argument(
+        "--palloc-treap-nodes",
+        dest="palloc_treap_nodes",
+        action="store_true",
+        help="Allocate implicit_treap nodes from Palloc slab (default: on)",
+    )
+    parser.add_argument(
+        "--no-palloc-treap-nodes",
+        dest="palloc_treap_nodes",
+        action="store_false",
+        help="Disable Palloc-backed implicit_treap node allocation",
+    )
+    parser.set_defaults(palloc_single_threaded=True)
+    parser.add_argument(
+        "--palloc-single-threaded",
+        dest="palloc_single_threaded",
+        action="store_true",
+        help="Build local Palloc with mutexes disabled (default: on)",
+    )
+    parser.add_argument(
+        "--no-palloc-single-threaded",
+        dest="palloc_single_threaded",
+        action="store_false",
+        help="Build local Palloc with normal mutexes enabled",
+    )
 
     args = parser.parse_args()
 
@@ -73,6 +99,8 @@ def main():
         f"-DMINIEDITOR_BUILD_TESTS={'ON' if build_tests else 'OFF'}",
         f"-DMINIEDITOR_BUILD_STRESS_TESTS={'ON' if args.stress_test else 'OFF'}",
         f"-DMINIEDITOR_STATIC_LINKING={'ON' if args.static else 'OFF'}",
+        f"-DMINIEDITOR_USE_PALLOC_FOR_TREAP_NODES={'ON' if args.palloc_treap_nodes else 'OFF'}",
+        f"-DMINIEDITOR_PALLOC_SINGLE_THREADED={'ON' if args.palloc_single_threaded else 'OFF'}",
     ]
 
     # Generator selection: Prefer Ninja if available, else let CMake decide

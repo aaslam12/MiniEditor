@@ -8,7 +8,7 @@
 int main()
 {
     AL::piece_table pt("Initial line\n");
-    palloc_vector<std::string> expected_lines;
+    std::vector<std::string> expected_lines;
     expected_lines.push_back("Initial line");
 
     const int num_iterations = 10000;

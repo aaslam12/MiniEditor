@@ -10,3 +10,4 @@
 *.out
 *.log
 compile_commands.json
+perf_notes.md
