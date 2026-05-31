@@ -3,6 +3,7 @@
 A C++20 terminal text editor built around a piece table and an implicit treap. It stays fast on large files, keeps the UI minimal, and uses Palloc-backed treap nodes for allocator exploration.
 
 `C++20` · `CMake` · `Catch2` · `PDCurses` · `Linux` · `Palloc`
+[![CI](https://github.com/aaslam12/MiniEditor/actions/workflows/ci.yml/badge.svg)](https://github.com/aaslam12/MiniEditor/actions/workflows/ci.yml)
 
 ---
 
