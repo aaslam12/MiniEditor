@@ -1,6 +1,6 @@
 # Benchmark Results
 
-All results below were captured from a Release build (`-O3`) on Linux x86-64.
+All results below are the mean of 5 runs from a Release build (`-O3`) pinned to CPU 0 on Linux x86-64.
 
 ```bash
 python3 build.py --config Release --stress-test

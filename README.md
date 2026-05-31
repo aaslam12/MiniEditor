@@ -24,7 +24,7 @@ A C++20 terminal text editor built around a piece table and an implicit treap. I
 | Release stress tests | `python3 build.py --config Release --stress-test` |
 | Benchmarks | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
 | Allocator | Palloc-backed treap nodes; system allocator elsewhere |
-| Tests | 29 test cases, 199 assertions |
+| Tests | 29 test cases, 200 assertions |
 
 ---
 
@@ -36,6 +36,12 @@ A C++20 terminal text editor built around a piece table and an implicit treap. I
 ./build/Release/minieditor /path/to/file.txt
 ```
 
+Or start with an empty buffer:
+
+```bash
+./build/Release/minieditor
+```
+
 ### Key bindings
 
 | Key | Action |
@@ -44,14 +50,14 @@ A C++20 terminal text editor built around a piece table and an implicit treap. I
 | Backspace | Delete the character before the cursor |
 | Enter | Insert a new line |
 | `]` | Save the current file |
-| `[` | Quit the editor |
+| `[` | Quit the editor after saving |
 | Typing | Insert ASCII characters (32-126) |
 
 ---
 
 ## Performance
 
-Headline numbers and methodology are in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md). The benchmark suite is captured with Palloc enabled, even though this workload runs slower with Palloc in the treap path; I kept it anyway so real use can surface allocator issues that design-time reasoning misses.
+Headline numbers and methodology are in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md). The benchmark suite is captured with Palloc enabled on the current Release build and pinned to core 0, even though this workload runs slower with Palloc in the treap path; I kept it anyway so real use can surface allocator issues that design-time reasoning misses.
 
 ---
 
