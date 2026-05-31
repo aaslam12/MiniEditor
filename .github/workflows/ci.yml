@@ -103,8 +103,19 @@ jobs:
           }
 
       - name: Package
+        if: runner.os == 'Linux'
         run: |
           python build.py --config Release --package
+
+      - name: Package (Windows static)
+        if: runner.os == 'Windows'
+        run: |
+          python build.py --config Release --package --static
+
+      - name: Package (macOS static)
+        if: runner.os == 'macOS'
+        run: |
+          python build.py --config Release --package --static
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

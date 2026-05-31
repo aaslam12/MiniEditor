@@ -95,7 +95,7 @@ python3 build.py --config Release --stress-test
 python3 build.py --config Release --package
 ```
 
-`--package` creates an AppImage on Linux, a zipped build artifact on Windows, or a `.dmg` on macOS. AppImage is Linux-only.
+`--package` creates an AppImage on Linux, a zipped build artifact on Windows, or a `.dmg` on macOS.
 
 ### Repository Layout
 
