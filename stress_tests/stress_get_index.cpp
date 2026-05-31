@@ -1,5 +1,5 @@
 #include "piecetable.h"
-#include <chrono>
+#include "low_overhead_bench.h"
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -19,12 +19,13 @@ int main()
 {
     AL::piece_table pt;
     const int num_lines = 1000000; // 1 Million
+    const double cycles_per_sec = bench::estimate_cycles_per_second();
 
     std::cout << "Target: " << num_lines << " pieces (1 million)" << std::endl;
 
     double mem_before = get_memory_usage();
 
-    auto start_build = std::chrono::high_resolution_clock::now();
+    uint64_t start_build = bench::rdtsc();
     for (int i = 1; i <= num_lines; ++i)
     {
         // This measures the time to append to buffer AND insert into the Treap
@@ -35,20 +36,24 @@ int main()
             std::cout << "  Progress: " << i << " pieces inserted..." << std::endl;
         }
     }
-    auto end_build = std::chrono::high_resolution_clock::now();
+    uint64_t end_build = bench::rdtsc();
 
     double mem_after = get_memory_usage();
-    std::chrono::duration<double> build_diff = end_build - start_build;
+    uint64_t build_cycles = end_build - start_build;
 
     size_t total_chars = pt.length();
     double total_mb = static_cast<double>(total_chars) / (1024.0 * 1024.0);
-    double throughput = total_mb / build_diff.count();
+    double cycles_per_mb = total_mb > 0.0 ? (static_cast<double>(build_cycles) / total_mb) : 0.0;
 
     std::cout << std::fixed << std::setprecision(4);
     std::cout << "\n[Tree Insertion Statistics]" << std::endl;
-    std::cout << "Total Insertion Time: " << build_diff.count() << " s" << std::endl;
-    std::cout << "Avg per Insertion:    " << (build_diff.count() * 1e6 / num_lines) << " microseconds" << std::endl;
-    std::cout << "Insertion Throughput: " << throughput << " MB/s" << std::endl;
+    std::cout << "Total Insertion Cycles: " << build_cycles << std::endl;
+    std::cout << "Total Insertion Time:   " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(build_cycles), cycles_per_sec)) << std::endl;
+    const double avg_insert_cycles = bench::cycles_per_op(build_cycles, num_lines);
+    std::cout << "Avg per Insertion:      " << avg_insert_cycles << " cycles"
+              << " (" << bench::format_seconds(bench::cycles_to_seconds(avg_insert_cycles, cycles_per_sec)) << ")" << std::endl;
+    std::cout << "Cycles per MB:          " << cycles_per_mb << std::endl;
+    std::cout << "Time per MB:            " << bench::format_seconds(bench::cycles_to_seconds(cycles_per_mb, cycles_per_sec)) << std::endl;
 
     std::cout << "\n[Memory Statistics]" << std::endl;
     std::cout << "Total Characters:     " << total_chars << " (" << total_mb << " MB)" << std::endl;
@@ -58,14 +63,15 @@ int main()
     std::cout << "\n[Search Statistics]" << std::endl;
     std::cout << "Searching for index of line " << target << "..." << std::endl;
 
-    auto start_search = std::chrono::high_resolution_clock::now();
+    uint64_t start_search = bench::rdtsc();
     size_t index = pt.get_index_for_line(target);
-    auto end_search = std::chrono::high_resolution_clock::now();
+    uint64_t end_search = bench::rdtsc();
 
-    std::chrono::duration<double> search_diff = end_search - start_search;
+    uint64_t search_cycles = end_search - start_search;
 
     std::cout << "Found index:          " << index << std::endl;
-    std::cout << "Search time:          " << search_diff.count() * 1000.0 << " ms" << std::endl;
+    std::cout << "Search cycles:        " << search_cycles << std::endl;
+    std::cout << "Search time:          " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(search_cycles), cycles_per_sec)) << std::endl;
 
     return 0;
 }

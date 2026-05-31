@@ -1,5 +1,5 @@
 #include "piecetable.h"
-#include <chrono>
+#include "low_overhead_bench.h"
 #include <cstddef>
 #include <iostream>
 #include <random>
@@ -10,6 +10,7 @@ int main()
 {
     AL::piece_table pt;
     const int NUM_CYCLES = 50000;
+    const double cycles_per_sec = bench::estimate_cycles_per_second();
 
     std::cout << "\n--- Alternating Insert/Delete Stress Test ---" << std::endl;
     std::cout << "Testing rapid alternation between inserts and deletes" << std::endl;
@@ -19,7 +20,7 @@ int main()
     std::uniform_int_distribution<int> char_dist('a', 'z');
     std::uniform_int_distribution<int> len_dist(5, 50);
 
-    auto start = std::chrono::high_resolution_clock::now();
+    uint64_t start = bench::rdtsc();
 
     for (int cycle = 0; cycle < NUM_CYCLES; ++cycle)
     {
@@ -49,20 +50,28 @@ int main()
         }
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = end - start;
+    uint64_t end = bench::rdtsc();
+    uint64_t cycles = end - start;
 
     std::cout << "\n[Results]" << std::endl;
-    std::cout << "Total time: " << diff.count() << " s" << std::endl;
-    std::cout << "Avg per cycle: " << (diff.count() * 1e6 / NUM_CYCLES) << " us" << std::endl;
+    std::cout << "Total cycles: " << cycles << std::endl;
+    std::cout << "Total time: " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(cycles), cycles_per_sec)) << std::endl;
+    const double cycles_per_cycle = bench::cycles_per_op(cycles, NUM_CYCLES);
+    std::cout << "Avg per cycle: " << cycles_per_cycle << " cycles"
+              << " (" << bench::format_seconds(bench::cycles_to_seconds(cycles_per_cycle, cycles_per_sec)) << ")" << std::endl;
     std::cout << "Final length: " << pt.length() << std::endl;
 
     // Sanity check: ensure we can still retrieve the string
-    auto retrieve_start = std::chrono::high_resolution_clock::now();
+    uint64_t retrieve_start = bench::rdtsc();
     std::string result = pt.to_string();
-    auto retrieve_end = std::chrono::high_resolution_clock::now();
+    uint64_t retrieve_end = bench::rdtsc();
+    uint64_t retrieve_cycles = retrieve_end - retrieve_start;
 
-    std::cout << "String retrieval time: " << std::chrono::duration<double>(retrieve_end - retrieve_start).count() * 1000.0 << " ms" << std::endl;
+    std::cout << "String retrieval cycles: " << retrieve_cycles << std::endl;
+    std::cout << "String retrieval time: " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(retrieve_cycles), cycles_per_sec)) << std::endl;
+    const double cycles_per_char = bench::cycles_per_op(retrieve_cycles, result.length());
+    std::cout << "Cycles per char: " << cycles_per_char
+              << " (" << bench::format_seconds(bench::cycles_to_seconds(cycles_per_char, cycles_per_sec)) << ")" << std::endl;
 
     if (result.length() != pt.length())
     {

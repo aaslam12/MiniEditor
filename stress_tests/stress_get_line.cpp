@@ -1,6 +1,6 @@
 #include "piecetable.h"
 #include "alias.h"
-#include <chrono>
+#include "low_overhead_bench.h"
 #include <iostream>
 #include <random>
 #include <string>
@@ -28,9 +28,10 @@ int main()
     std::uniform_int_distribution<size_t> dist(1, pt.get_line_count());
 
     const int num_reads = 50000;
+    const double cycles_per_sec = bench::estimate_cycles_per_second();
     std::cout << "Performing " << num_reads << " random get_line reads..." << std::endl;
 
-    auto start = std::chrono::steady_clock::now();
+    uint64_t start = bench::rdtsc();
     for (int i = 0; i < num_reads; ++i)
     {
         size_t line_num = dist(rng);
@@ -43,12 +44,15 @@ int main()
             return 1;
         }
     }
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> diff = end - start;
+    uint64_t end = bench::rdtsc();
+    uint64_t cycles = end - start;
 
     std::cout << "Stress test passed!" << std::endl;
-    std::cout << "Total time for " << num_reads << " reads: " << diff.count() << "s" << std::endl;
-    std::cout << "Average time per read: " << (diff.count() / num_reads) * 1e6 << "us" << std::endl;
+    std::cout << "Total cycles for " << num_reads << " reads: " << cycles << std::endl;
+    std::cout << "Total time: " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(cycles), cycles_per_sec)) << std::endl;
+    const double avg_read_cycles = bench::cycles_per_op(cycles, num_reads);
+    std::cout << "Average cycles per read: " << avg_read_cycles
+              << " (" << bench::format_seconds(bench::cycles_to_seconds(avg_read_cycles, cycles_per_sec)) << ")" << std::endl;
 
     return 0;
 }

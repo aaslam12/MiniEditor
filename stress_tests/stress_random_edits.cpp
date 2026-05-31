@@ -1,5 +1,5 @@
 #include "piecetable.h"
-#include <chrono>
+#include "low_overhead_bench.h"
 #include <iostream>
 #include <random>
 #include <string>
@@ -9,6 +9,7 @@ int main()
     AL::piece_table pt;
     const int NUM_OPERATIONS = 500'000;
     const int INITIAL_SIZE = 1'000'000;
+    const double cycles_per_sec = bench::estimate_cycles_per_second();
 
     std::cout << "\n--- Random Edits Stress Test ---" << std::endl;
     std::cout << "Initializing with " << INITIAL_SIZE << " characters..." << std::endl;
@@ -24,7 +25,7 @@ int main()
 
     std::cout << "Performing " << NUM_OPERATIONS << " random insertions/deletions..." << std::endl;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    uint64_t start = bench::rdtsc();
 
     for (int i = 0; i < NUM_OPERATIONS; ++i)
     {
@@ -64,21 +65,29 @@ int main()
         }
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = end - start;
+    uint64_t end = bench::rdtsc();
+    uint64_t cycles = end - start;
 
     std::cout << "\n[Random Edit Statistics]" << std::endl;
-    std::cout << "Time Elapsed:     " << diff.count() << " s" << std::endl;
-    std::cout << "Avg per Edit:     " << (diff.count() * 1e6 / NUM_OPERATIONS) << " microseconds" << std::endl;
+    std::cout << "Total cycles:     " << cycles << std::endl;
+    std::cout << "Total time:       " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(cycles), cycles_per_sec)) << std::endl;
+    const double avg_edit_cycles = bench::cycles_per_op(cycles, NUM_OPERATIONS);
+    std::cout << "Avg per Edit:     " << avg_edit_cycles << " cycles"
+              << " (" << bench::format_seconds(bench::cycles_to_seconds(avg_edit_cycles, cycles_per_sec)) << ")" << std::endl;
     std::cout << "Final Size:       " << pt.length() << " characters" << std::endl;
 
     // Sanity check: Retrieve the string to ensure the tree isn't broken
     // (This traverses the whole tree)
-    auto string_start = std::chrono::high_resolution_clock::now();
+    uint64_t string_start = bench::rdtsc();
     std::string final_str = pt.to_string();
-    auto string_end = std::chrono::high_resolution_clock::now();
+    uint64_t string_end = bench::rdtsc();
+    uint64_t string_cycles = string_end - string_start;
 
-    std::cout << "Reconstruction:   " << std::chrono::duration<double>(string_end - string_start).count() << " s" << std::endl;
+    std::cout << "Reconstruction:   " << string_cycles << " cycles" << std::endl;
+    std::cout << "Reconstruction time: " << bench::format_seconds(bench::cycles_to_seconds(static_cast<double>(string_cycles), cycles_per_sec)) << std::endl;
+    const double cycles_per_char = bench::cycles_per_op(string_cycles, final_str.length());
+    std::cout << "Cycles per char:  " << cycles_per_char
+              << " (" << bench::format_seconds(bench::cycles_to_seconds(cycles_per_char, cycles_per_sec)) << ")" << std::endl;
     std::cout << "Check: String length matches tree size? " << (final_str.length() == pt.length() ? "YES" : "NO") << std::endl;
 
     return 0;
