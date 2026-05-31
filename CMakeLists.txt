@@ -85,8 +85,14 @@ endif()
 
 FetchContent_Declare(
   palloc
-  SOURCE_DIR /home/al/Projects/Palloc
+  GIT_REPOSITORY https://github.com/aaslam12/Palloc.git
+  GIT_TAG        main
+  GIT_SHALLOW    TRUE
 )
+if(DEFINED FETCHCONTENT_SOURCE_DIR_PALLOC)
+  message(WARNING "Ignoring FETCHCONTENT_SOURCE_DIR_PALLOC so Palloc is fetched from GitHub into the CMake deps folder.")
+  unset(FETCHCONTENT_SOURCE_DIR_PALLOC CACHE)
+endif()
 # Propagate single-threaded mode into the local Palloc subproject.
 set(PALLOC_SINGLE_THREADED ${MINIEDITOR_PALLOC_SINGLE_THREADED} CACHE BOOL "Disable Palloc mutexes" FORCE)
 FetchContent_MakeAvailable(palloc)

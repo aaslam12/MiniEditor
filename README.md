@@ -97,6 +97,7 @@ python3 build.py --config Release --stress-test
 ```
 
 By default, MiniEditor uses Palloc for implicit treap nodes but keeps global `new`/`delete` on the system allocator. The global override path was removed due instability and large performance regressions in deallocation-heavy workloads.
+The benchmark numbers below were captured before the latest Palloc updates; re-run after updating Palloc since the slab behavior and API have changed.
 
 #### Allocator Mode Snapshot (`stress_get_index` + `stress_random_edits`)
 

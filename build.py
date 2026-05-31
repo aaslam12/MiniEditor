@@ -54,13 +54,13 @@ def main():
         "--palloc-single-threaded",
         dest="palloc_single_threaded",
         action="store_true",
-        help="Build local Palloc with mutexes disabled (default: on)",
+        help="Build Palloc with mutexes disabled (default: on)",
     )
     parser.add_argument(
         "--no-palloc-single-threaded",
         dest="palloc_single_threaded",
         action="store_false",
-        help="Build local Palloc with normal mutexes enabled",
+        help="Build Palloc with normal mutexes enabled",
     )
 
     args = parser.parse_args()
