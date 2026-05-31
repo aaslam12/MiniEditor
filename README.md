@@ -1,227 +1,105 @@
 # MiniEditor
 
-MiniEditor is a high-performance, cross-platform, terminal-based text editor built from scratch in C++20. It is designed to be efficient and simple while handling large files with ease. The editor features a responsive TUI (Text User Interface) backed by advanced data structures (Piece Table with Implicit Treap) that ensure operations remain fast regardless of file size.
+A C++20 terminal text editor built around a piece table and an implicit treap. It stays fast on large files, keeps the UI minimal, and uses Palloc-backed treap nodes for allocator exploration.
 
-## Project Overview
+`C++20` · `CMake` · `Catch2` · `PDCurses` · `Linux` · `Palloc`
 
-*   **Language:** C++20
-*   **Build System:** CMake (wrapped in a Python script)
-*   **Key Data Structures:** Piece Table, Implicit Treap
-*   **Libraries:** PDCurses (for TUI), Catch2 (for Unit Testing)
+---
 
-## Key Features
+## Highlights
 
-*   **High Performance:** Optimized O(log n) operations using an Implicit Treap-backed Piece Table
-*   **Large File Support:** Efficiently handle files of any size without memory bloat
-*   **Responsive Editing:** Batched insertions (up to 512 bytes) with real-time display during batching
-*   **Intuitive Navigation:** Full cursor support with horizontal/vertical scrolling for long lines
-*   **Proper Viewport Management:** Automatic scrolling keeps cursor visible with efficient rendering
-*   **Command-line Integration:** Open files directly from the command line
-*   **Persistent Storage:** Save changes with visual confirmation in the status bar
-*   **Clean TUI:** Dark terminal-friendly interface with line numbers and status bar
-*   **Comprehensive Testing:** 29 unit tests covering core functionality (199 assertions)
+- Piece table + implicit treap core for O(log n) edits.
+- Batched insertions up to 512 bytes.
+- Terminal UI with cursor movement, scrolling, save, and quit.
+- Debug unit tests and Release stress tests via `build.py`.
+- Full benchmark tables live in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
-## Requirements
+---
 
-To build MiniEditor, you need the following:
+## At a Glance
 
-*   **Compiler:** A C++ compiler supporting C++20
-*   **Build Tools:**
-    *   CMake (3.10 or newer)
-    *   Python 3 (for the build script)
-    *   Ninja (recommended) or Make
+| Area | Details |
+|------|---------|
+| Build | `python3 build.py` |
+| Release stress tests | `python3 build.py --config Release --stress-test` |
+| Benchmarks | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
+| Allocator | Palloc-backed treap nodes; system allocator elsewhere |
+| Tests | 29 test cases, 199 assertions |
 
-## Build
-
-The project includes a `build.py` helper script to streamline the build process.
-
-Builds the project in Debug mode and runs unit tests.
-```bash
-python build.py
-```
-*Note: The executable will be located at `build/Debug/minieditor`*
-
-### Build Options
-
-| Flag | Description |
-| :--- | :--- |
-| `--config <type>` | Set build configuration: `Debug` (default) or `Release`. |
-| `--clean` | Removes the `build` directory to start fresh. |
-| `--build-only` | Only compiles the project and skips running tests or the executable. |
-| `--no-tests` | Skips building and running unit tests (default in Release mode). |
-| `--stress-test` | Builds and runs the performance stress tests. Should be paired with the Release configuration |
-| `--static` | Links standard libraries (`libgcc`, `libstdc++`) statically. Useful for portability. |
-| `--palloc-treap-nodes` | Enables Palloc-backed allocation for implicit treap nodes (enabled by default). |
-| `--no-palloc-treap-nodes` | Disables Palloc-backed implicit treap node allocation and uses regular `new/delete`. |
+---
 
 ## Usage
 
-### Opening the Editor
+### Open a file
 
 ```bash
-# Open an existing file
 ./build/Release/minieditor /path/to/file.txt
-
-# Start with an empty buffer (requires specifying a file path to save later)
-./build/Release/minieditor
 ```
 
-### Key Bindings
+### Key bindings
 
 | Key | Action |
-| :--- | :--- |
-| **Arrow Keys** | Move cursor (Up, Down, Left, Right) |
-| **Backspace** | Remove character before cursor |
-| **Enter** | Insert a new line |
-| **`]`** | Save the current file |
-| **`[`** | Quit the editor |
-| **Typing** | Insert characters at cursor position (ASCII 32-126) |
+|-----|--------|
+| Arrow keys | Move the cursor |
+| Backspace | Delete the character before the cursor |
+| Enter | Insert a new line |
+| `]` | Save the current file |
+| `[` | Quit the editor |
+| Typing | Insert ASCII characters (32-126) |
 
-### Status Bar Information
+---
 
-The status bar at the bottom displays:
-*   **Filename** - Name of the currently open file
-*   **Position** - Current cursor line and column (1-indexed)
-*   **Dirty Indicator** - `[modified]` when file has unsaved changes
-*   **Status Message** - Temporary messages like "File saved!" or error messages
+## Performance
 
-## Architecture & Implementation
+Headline numbers and methodology are in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md). The benchmark suite is captured with Palloc enabled, even though this workload runs slower with Palloc in the treap path; I kept it anyway so real use can surface allocator issues that design-time reasoning misses.
 
+---
 
-### Benchmark Results
+## Engineering Decisions
 
-All results are from a Release build (`-O3`) on a standard Linux x86-64 machine.
+**1. Piece table + implicit treap.**
+MiniEditor stores the file as original and add buffers, then uses an implicit treap to keep insert, delete, and line lookup operations fast without rebuilding the whole document.
 
-```bash
-python3 build.py --config Release --stress-test
-```
+**2. Batched insertions.**
+Typed input is buffered up to 512 bytes before flushing into the piece table, which reduces tree updates for normal typing.
 
-By default, MiniEditor uses Palloc for implicit treap nodes but keeps global `new`/`delete` on the system allocator. The global override path was removed due instability and large performance regressions in deallocation-heavy workloads.
-The benchmark numbers below were captured before the latest Palloc updates; re-run after updating Palloc since the slab behavior and API have changed.
+**3. Newline-aware metadata and caching.**
+Each piece tracks newline counts, subtree metadata powers line-based navigation, and `piece_table` caches reconstructed text so repeated reads do not rebuild the document every time.
 
-#### Allocator Mode Snapshot (`stress_get_index` + `stress_random_edits`)
+**4. Palloc only for treap nodes.**
+Known-size treap nodes use Palloc, while higher-level containers and strings stay on the system allocator. This workload is still slower with Palloc, but it remains in the tree for allocator exploration rather than raw throughput.
 
-| Configuration | `stress_get_index` | `stress_random_edits` | Memory (`get_index`) |
-| :--- | ---: | ---: | ---: |
-| `--palloc-treap-nodes` (default) | 0.165-0.198 s | 0.745-0.863 s | ~145 MB |
-| `--no-palloc-treap-nodes` | 0.141-0.143 s | 0.402-0.425 s | ~89 MB |
+---
 
-The detailed per-benchmark tables below were captured in `--no-palloc-treap-nodes` mode to reflect baseline editor algorithm performance.
+## Getting Started
 
-#### Front Insertions & Deletions
-Stress-tests the hardest case for most editors: repeated edits at position 0.
+### Requirements
 
-Benchmarks below are with Palloc enabled. I kept Palloc in the treap path even though this machine ran faster without it, because real-world use can reveal allocator issues that aren’t obvious during design or implementation alone.
+- C++20 compiler
+- CMake 3.10+
+- Python 3
+- Ninja or Make
 
-| Operation | Count | Total Time | Avg per op |
-| :--- | ---: | ---: | ---: |
-| Insert at front | 100,000 | 19.11 ms | **0.191 µs** |
-| Delete from front | 100,000 | 10.23 ms | **0.102 µs** |
-
-#### Alternating Insert / Delete
-Rapid alternation between inserts and deletes at random positions.
-
-| Metric | Result |
-| :--- | ---: |
-| Cycles | 50,000 |
-| Total time | 37.97 ms |
-| **Avg per cycle** | **0.759 µs** |
-| Full string rebuild | 0.009 ms |
-
-#### Random Edits (1 MB buffer)
-500k random insertions and deletions across a 1 million character buffer.
-
-| Metric | Result |
-| :--- | ---: |
-| Operations | 500,000 |
-| Total time | 431.8 ms |
-| **Avg per edit** | **0.864 µs** |
-| Full reconstruction | 2.4 ms |
-
-#### Tree Insertion Throughput (1M pieces)
-Measures raw piece insertion speed building a tree of 1 million nodes.
-
-| Metric | Result |
-| :--- | ---: |
-| Total pieces inserted | 1,000,000 |
-| Total time | 0.151 s |
-| **Avg per insertion** | **0.151 µs** |
-| **Throughput** | **~75 MB/s** |
-| Total data | 11.3 MB |
-| Peak RAM | ~88.9 MB |
-
-#### Line Access — `get_line` (O(log n))
-Random `get_line` reads across a table built from 10,000 individually inserted pieces.
-
-| Metric | Result |
-| :--- | ---: |
-| Reads | 50,000 |
-| Total time | 21.1 ms |
-| **Avg per read** | **0.422 µs** |
-
-#### Line Access — `get_line` on 100k-line file
-
-| Metric | Result |
-| :--- | ---: |
-| Lines in file | 100,000 |
-| Random `get_line` reads | 10,000 |
-| **Avg per `get_line`** | **0.772 µs** |
-| Random `get_index_for_line` lookups | 1,000 |
-| **Avg per `get_index_for_line`** | **0.566 µs** |
-| Random newline inserts | 1,000 |
-| Avg per newline insert | 0.741 µs |
-
-#### `get_index_for_line` on 10M-piece tree
-
-| Metric | Result |
-| :--- | ---: |
-| Pieces in tree | 10,000,000 |
-| **Search time (single lookup)** | **0.0035 ms** |
-
-### Flamegraphs
-
-Interactive SVG flamegraphs are in the [`flamegraphs/`](flamegraphs/) directory, generated with `perf record -F 999 --call-graph dwarf` on each stress test.
-
-| Benchmark | Flamegraph |
-| :--- | :--- |
-| Alternating insert/delete | [stress_alternating_ops.svg](flamegraphs/stress_alternating_ops.svg) |
-| Front insertions/deletions | [stress_front_ops.svg](flamegraphs/stress_front_ops.svg) |
-| 10M piece tree insertion | [stress_get_index.svg](flamegraphs/stress_get_index.svg) |
-| Random `get_line` (10k pieces) | [stress_get_line.svg](flamegraphs/stress_get_line.svg) |
-| 100k line file access | [stress_newlines.svg](flamegraphs/stress_newlines.svg) |
-| Random edits (10MB buffer) | [stress_random_edits.svg](flamegraphs/stress_random_edits.svg) |
-
-## Testing
-
-The project includes comprehensive unit tests:
+### Build
 
 ```bash
-# Run unit tests (default, included in debug build)
 python3 build.py
-
-# Run only with no tests
-python3 build.py --no-tests
-
-# Run stress tests for performance analysis
 python3 build.py --config Release --stress-test
 ```
 
-**Test Coverage:** 29 test cases, 199 assertions covering:
-*   Editor operations (cursor movement, text insertion/deletion, file I/O)
-*   Piece table functionality (insertion, deletion, line access)
-*   Data structure integrity (Implicit Treap operations)
+### Repository Layout
 
-## Development Conventions
+| Path | Purpose |
+|------|---------|
+| `include/` | Public headers |
+| `src/` | Implementation files |
+| `tests/` | Unit tests |
+| `stress_tests/` | Performance benchmarks |
+| `docs/` | Benchmark and profiling docs |
+| `flamegraphs/` | Generated flamegraphs |
 
-*   **Namespace:** All code is contained within the `AL` namespace
-*   **Formatting:** Code follows `.clang-format` configuration for consistency
-*   **Testing:** The macro `MINIEDITOR_TESTING` exposes private members for white-box testing
-*   **Code Style:** Clean, readable C++ with minimal comments (only where necessary)
+---
 
-## Limitations (for now)
+## Author
 
-*   ASCII input only (characters 32-126)
-*   No undo/redo functionality
-*   No multi-file support
-*   No syntax highlighting
-*   No search/replace functionality
+Built by Altamash Aslam.
