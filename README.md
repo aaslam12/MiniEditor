@@ -111,10 +111,12 @@ The detailed per-benchmark tables below were captured in `--no-palloc-treap-node
 #### Front Insertions & Deletions
 Stress-tests the hardest case for most editors: repeated edits at position 0.
 
+Benchmarks below are with Palloc enabled. I kept Palloc in the treap path even though this machine ran faster without it, because real-world use can reveal allocator issues that aren’t obvious during design or implementation alone.
+
 | Operation | Count | Total Time | Avg per op |
 | :--- | ---: | ---: | ---: |
-| Insert at front | 100,000 | 9.79 ms | **0.098 µs** |
-| Delete from front | 100,000 | 9.44 ms | **0.094 µs** |
+| Insert at front | 100,000 | 19.11 ms | **0.191 µs** |
+| Delete from front | 100,000 | 10.23 ms | **0.102 µs** |
 
 #### Alternating Insert / Delete
 Rapid alternation between inserts and deletes at random positions.
@@ -122,8 +124,8 @@ Rapid alternation between inserts and deletes at random positions.
 | Metric | Result |
 | :--- | ---: |
 | Cycles | 50,000 |
-| Total time | 32.0 ms |
-| **Avg per cycle** | **0.639 µs** |
+| Total time | 37.97 ms |
+| **Avg per cycle** | **0.759 µs** |
 | Full string rebuild | 0.009 ms |
 
 #### Random Edits (1 MB buffer)
@@ -132,8 +134,8 @@ Rapid alternation between inserts and deletes at random positions.
 | Metric | Result |
 | :--- | ---: |
 | Operations | 500,000 |
-| Total time | 401.1 ms |
-| **Avg per edit** | **0.802 µs** |
+| Total time | 431.8 ms |
+| **Avg per edit** | **0.864 µs** |
 | Full reconstruction | 2.4 ms |
 
 #### Tree Insertion Throughput (1M pieces)
@@ -142,11 +144,11 @@ Measures raw piece insertion speed building a tree of 1 million nodes.
 | Metric | Result |
 | :--- | ---: |
 | Total pieces inserted | 1,000,000 |
-| Total time | 0.145 s |
-| **Avg per insertion** | **0.145 µs** |
-| **Throughput** | **~78 MB/s** |
+| Total time | 0.151 s |
+| **Avg per insertion** | **0.151 µs** |
+| **Throughput** | **~75 MB/s** |
 | Total data | 11.3 MB |
-| Peak RAM | ~74.8 MB |
+| Peak RAM | ~88.9 MB |
 
 #### Line Access — `get_line` (O(log n))
 Random `get_line` reads across a table built from 10,000 individually inserted pieces.
@@ -154,8 +156,8 @@ Random `get_line` reads across a table built from 10,000 individually inserted p
 | Metric | Result |
 | :--- | ---: |
 | Reads | 50,000 |
-| Total time | 16.8 ms |
-| **Avg per read** | **0.336 µs** |
+| Total time | 21.1 ms |
+| **Avg per read** | **0.422 µs** |
 
 #### Line Access — `get_line` on 100k-line file
 
@@ -163,18 +165,18 @@ Random `get_line` reads across a table built from 10,000 individually inserted p
 | :--- | ---: |
 | Lines in file | 100,000 |
 | Random `get_line` reads | 10,000 |
-| **Avg per `get_line`** | **0.667 µs** |
+| **Avg per `get_line`** | **0.772 µs** |
 | Random `get_index_for_line` lookups | 1,000 |
-| **Avg per `get_index_for_line`** | **0.460 µs** |
+| **Avg per `get_index_for_line`** | **0.566 µs** |
 | Random newline inserts | 1,000 |
-| Avg per newline insert | 0.699 µs |
+| Avg per newline insert | 0.741 µs |
 
 #### `get_index_for_line` on 10M-piece tree
 
 | Metric | Result |
 | :--- | ---: |
 | Pieces in tree | 10,000,000 |
-| **Search time (single lookup)** | **0.003 ms** |
+| **Search time (single lookup)** | **0.0035 ms** |
 
 ### Flamegraphs
 
