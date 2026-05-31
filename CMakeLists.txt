@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(minieditor VERSION 0.1 LANGUAGES CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+include(GNUInstallDirs)
 
 # -----------------------
 # Options
@@ -162,6 +163,21 @@ if(MINIEDITOR_ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_options(minieditor PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
   target_link_options(minieditor PRIVATE -fsanitize=address,undefined)
 endif()
+
+install(TARGETS minieditor RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES
+  "${CMAKE_SOURCE_DIR}/README.md"
+  "${CMAKE_SOURCE_DIR}/docs/BENCHMARKS.md"
+  DESTINATION ${CMAKE_INSTALL_DOCDIR}/minieditor
+)
+install(FILES
+  "${CMAKE_SOURCE_DIR}/packaging/minieditor.desktop"
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+install(FILES
+  "${CMAKE_SOURCE_DIR}/packaging/minieditor.svg"
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+)
 
 # -----------------------
 # Tests

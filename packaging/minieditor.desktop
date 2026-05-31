@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MiniEditor
+Comment=Terminal text editor
+Exec=minieditor %F
+Terminal=true
+Categories=Utility;TextEditor;
+Icon=minieditor

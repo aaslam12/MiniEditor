@@ -5,6 +5,9 @@ import platform
 import shutil
 import subprocess
 import sys
+import zipfile
+
+APP_VERSION = "0.1"
 
 
 def main():
@@ -35,6 +38,16 @@ def main():
     )
     parser.add_argument(
         "--static", action="store_true", help="Link libraries statically"
+    )
+    parser.add_argument(
+        "--package",
+        action="store_true",
+        help="Create a platform-appropriate package after building",
+    )
+    parser.add_argument(
+        "--package-output-dir",
+        default=os.path.join("build", "packages"),
+        help="Directory for packaged artifacts (default: build/packages)",
     )
     parser.set_defaults(palloc_treap_nodes=True)
     parser.add_argument(
@@ -140,6 +153,11 @@ def main():
         print("Build complete.")
         return
 
+    if args.package:
+        package_project(project_root, build_dir, args.package_output_dir, args.config)
+        print("Package complete.")
+        return
+
     # --- Test Step ---
     if build_tests:
         print("\n=== Running Tests ===")
@@ -200,6 +218,173 @@ def main():
     else:
         print(f"Error: Executable not found at {executable_path}")
         sys.exit(1)
+
+
+def run_checked(command, cwd=None):
+    subprocess.check_call(command, cwd=cwd)
+
+
+def package_project(project_root, build_dir, output_dir, config):
+    os.makedirs(output_dir, exist_ok=True)
+    system = platform.system()
+    if system == "Linux":
+        package_appimage(project_root, build_dir, output_dir, config)
+        return
+
+    if system == "Windows":
+        package_windows_zip(project_root, build_dir, output_dir, config)
+        return
+
+    if system == "Darwin":
+        package_macos_dmg(project_root, build_dir, output_dir, config)
+        return
+
+    raise SystemExit(f"Packaging is not configured for {system}.")
+
+
+def executable_name_for_system(system):
+    return "minieditor.exe" if system == "Windows" else "minieditor"
+
+
+def package_windows_zip(project_root, build_dir, output_dir, config):
+    package_name = f"minieditor-{config}-windows.zip"
+    package_path = os.path.join(output_dir, package_name)
+    staging_dir = os.path.join(build_dir, "package-staging")
+    shutil.rmtree(staging_dir, ignore_errors=True)
+    os.makedirs(staging_dir, exist_ok=True)
+
+    exe_name = executable_name_for_system(platform.system())
+    source_exe = os.path.join(build_dir, exe_name)
+    if not os.path.exists(source_exe):
+        raise SystemExit(f"Executable not found at {source_exe}")
+
+    shutil.copy2(source_exe, os.path.join(staging_dir, exe_name))
+    shutil.copy2(os.path.join(project_root, "README.md"), os.path.join(staging_dir, "README.md"))
+    shutil.copy2(
+        os.path.join(project_root, "docs", "BENCHMARKS.md"),
+        os.path.join(staging_dir, "BENCHMARKS.md"),
+    )
+
+    with zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for root, _, files in os.walk(staging_dir):
+            for filename in files:
+                abs_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(abs_path, staging_dir)
+                archive.write(abs_path, rel_path)
+    print(f"Wrote {package_path}")
+
+
+def package_appimage(project_root, build_dir, output_dir, config):
+    appdir = os.path.join(build_dir, "AppDir")
+    shutil.rmtree(appdir, ignore_errors=True)
+    os.makedirs(os.path.join(appdir, "usr", "bin"), exist_ok=True)
+    os.makedirs(os.path.join(appdir, "usr", "share", "doc", "minieditor"), exist_ok=True)
+
+    app_name = "minieditor"
+    desktop_src = os.path.join(project_root, "packaging", "minieditor.desktop")
+    icon_src = os.path.join(project_root, "packaging", "minieditor.svg")
+    exe_name = executable_name_for_system(platform.system())
+    source_exe = os.path.join(build_dir, exe_name)
+    if not os.path.exists(source_exe):
+        raise SystemExit(f"Executable not found at {source_exe}")
+
+    shutil.copy2(source_exe, os.path.join(appdir, "usr", "bin", "minieditor"))
+    shutil.copy2(
+        os.path.join(project_root, "README.md"),
+        os.path.join(appdir, "usr", "share", "doc", "minieditor", "README.md"),
+    )
+    shutil.copy2(
+        os.path.join(project_root, "docs", "BENCHMARKS.md"),
+        os.path.join(appdir, "usr", "share", "doc", "minieditor", "BENCHMARKS.md"),
+    )
+    shutil.copy2(desktop_src, os.path.join(appdir, f"{app_name}.desktop"))
+    shutil.copy2(icon_src, os.path.join(appdir, f"{app_name}.svg"))
+
+    app_run_path = os.path.join(appdir, "AppRun")
+    with open(app_run_path, "w", encoding="utf-8") as handle:
+        handle.write("#!/bin/sh\n")
+        handle.write('HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"\n')
+        handle.write('exec "$HERE/usr/bin/minieditor" "$@"\n')
+    os.chmod(app_run_path, 0o755)
+
+    binary_path = os.path.join(appdir, "usr", "bin", "minieditor")
+    if os.path.exists(binary_path):
+        os.chmod(binary_path, 0o755)
+
+    appimagetool = shutil.which("appimagetool")
+    if not appimagetool:
+        raise SystemExit(
+            "appimagetool is required to create an AppImage. Install it and rerun --package."
+        )
+
+    arch = platform.machine().lower()
+    if arch in ("x86_64", "amd64"):
+        arch = "x86_64"
+    elif arch in ("aarch64", "arm64"):
+        arch = "aarch64"
+
+    package_name = f"minieditor-{config}-{arch}.AppImage"
+    package_path = os.path.join(output_dir, package_name)
+    run_checked([appimagetool, appdir, package_path])
+    print(f"Wrote {package_path}")
+
+
+def package_macos_dmg(project_root, build_dir, output_dir, config):
+    app_name = "MiniEditor.app"
+    app_bundle = os.path.join(build_dir, app_name)
+    contents_dir = os.path.join(app_bundle, "Contents")
+    macos_dir = os.path.join(contents_dir, "MacOS")
+    resources_dir = os.path.join(contents_dir, "Resources")
+
+    shutil.rmtree(app_bundle, ignore_errors=True)
+    os.makedirs(macos_dir, exist_ok=True)
+    os.makedirs(resources_dir, exist_ok=True)
+
+    source_exe = os.path.join(build_dir, executable_name_for_system("Darwin"))
+    if not os.path.exists(source_exe):
+        raise SystemExit(f"Executable not found at {source_exe}")
+
+    shutil.copy2(source_exe, os.path.join(macos_dir, "minieditor"))
+    os.chmod(os.path.join(macos_dir, "minieditor"), 0o755)
+    shutil.copy2(os.path.join(project_root, "README.md"), os.path.join(resources_dir, "README.md"))
+    shutil.copy2(
+        os.path.join(project_root, "docs", "BENCHMARKS.md"),
+        os.path.join(resources_dir, "BENCHMARKS.md"),
+    )
+
+    info_plist_path = os.path.join(contents_dir, "Info.plist")
+    with open(info_plist_path, "w", encoding="utf-8") as handle:
+        handle.write(
+            """<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>CFBundleDisplayName</key>
+    <string>MiniEditor</string>
+    <key>CFBundleExecutable</key>
+    <string>minieditor</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.github.aaslam12.minieditor</string>
+    <key>CFBundleName</key>
+    <string>MiniEditor</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>{version}</string>
+    <key>CFBundleVersion</key>
+    <string>{version}</string>
+</dict>
+</plist>
+""".format(version=APP_VERSION)
+        )
+
+    package_path = os.path.join(output_dir, f"minieditor-{config}-macos.dmg")
+    hdiutil = shutil.which("hdiutil")
+    if not hdiutil:
+        raise SystemExit("hdiutil is required to create a DMG on macOS.")
+
+    run_checked([hdiutil, "create", "-volname", "MiniEditor", "-srcfolder", app_bundle, "-ov", "-format", "UDZO", package_path])
+    print(f"Wrote {package_path}")
 
 
 if __name__ == "__main__":
